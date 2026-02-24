@@ -1,0 +1,137 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{array}
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+
+\noindent
+\textbf{Engenharia de Software / Engenharia de Requisitos}\\
+\textbf{IFCE - Campus Boa Viagem}\\
+\textbf{Trabalho de Engenharia de Software / Engenharia de Requisitos}\\
+\textbf{Profa.:} Jéssica de Paulo Rodrigues (rodrigues.jessica@ifce.edu.br)\\
+\textbf{Equipe:} Luidy Costa, Leticia Maciel, Germano Moraes\\
+\textbf{Contato:} luidy.costa08@aluno.ifce.edu.br
+
+\vspace{2cm}
+\begin{center}
+\textbf{Documentação do Sistema LungPrediction SaaS}\\[0.5cm]
+\textbf{Especificação de Requisitos de Software}
+\end{center}
+
+\vspace{1cm}
+\textbf{Histórico da Revisão}
+
+\vspace{0.3cm}
+\begin{tabular}{| m{3cm} | m{2cm} | m{7cm} | m{3cm} |}
+\hline
+\textbf{Data} & \textbf{Versão} & \textbf{Descrição} & \textbf{Autor} \\
+\hline
+23/Fev/26 & 1.0 & Criação do Documento ERS inicial & Luidy e Equipe \\
+\hline
+\end{tabular}
+
+\newpage
+\begin{center}
+\textbf{Sumário}
+\end{center}
+
+\vspace{0.5cm}
+\noindent
+1 \textbf{Introdução} \dotfill 3\\
+1.1 Objetivo \dotfill 3\\
+1.2 Escopo \dotfill 3\\
+1.3 Definições, Acrônimos e Abreviações \dotfill 3\\
+1.4 Referências \dotfill 3\\
+1.5 Visão Geral \dotfill 4\\
+1.6 Perfil do usuário \dotfill 4\\
+
+\vspace{0.3cm}
+2 \textbf{Definição de Requisitos} \dotfill 4\\
+2.1 Descrição do Propósito do Sistema \dotfill 4\\
+2.2 Descrição do Minimundo \dotfill 4\\
+2.3 Requisitos de Usuário \dotfill 4\\
+
+\vspace{0.3cm}
+3 \textbf{Identificação de Subsistemas}
+
+\vspace{0.3cm}
+4 \textbf{Modelo de Casos de Uso} \dotfill 6\\
+5 \textbf{Protótipo} \dotfill 6
+
+\newpage
+\section{Introdução}
+Este documento apresenta alguns dos resultados produzidos durante a fase de Especificação e Análise de Requisitos do sistema LungPrediction SaaS. A seção 2 aborda a documentação de requisitos, sendo apresentados o propósito do sistema (seção 2.1), a descrição do minimundo (seção 2.2) e a lista de requisitos de usuário levantados junto ao cliente (seção 2.3), definidos no formato de user stories, como requisitos funcionais e como requisitos não funcionais. A seção 3 apresenta os subsistemas identificados, mostrando suas dependências na forma de um diagrama de pacotes. A seção 4 apresenta o modelo de casos de uso, para representar uma visão comportamental do sistema. A seção 5 apresenta telas do protótipo construído para o sistema como forma de materializar os requisitos do usuário.
+
+\subsection{Objetivo}
+Especificar os requisitos do LungPrediction SaaS. A ERS descreve completamente o comportamento externo do aplicativo, que atua como uma plataforma de auxílio preditivo. Descreve também requisitos não funcionais, como segurança LGPD e arquitetura Multi-Tenant, necessários para fornecer uma descrição completa e abrangente dos requisitos para o software.
+
+\subsection{Escopo}
+O LungPrediction SaaS é uma aplicação Web operando no modelo Software as a Service (SaaS). O escopo central é fornecer uma triagem preditiva de risco de câncer de pulmão para pacientes, utilizando um modelo de Inteligência Artificial (Machine Learning) baseado em dados clínicos e sintomas. O sistema garante o isolamento de dados entre diferentes hospitais e a rastreabilidade dos laudos médicos através de geração de PDFs. Módulos de faturamento, agendamento de consultas ou controle de estoque hospitalar estão fora do escopo desta especificação.
+
+\subsection{Definições, Acrônimos e Abreviações}
+\begin{itemize}
+    \item \textbf{SaaS}: Software as a Service (Software como Serviço).
+    \item \textbf{Multi-Tenant}: Arquitetura onde uma única instância do software atende a múltiplos hospitais (inquilinos), mantendo os dados de cada um rigorosamente isolados.
+    \item \textbf{LGPD}: Lei Geral de Proteção de Dados.
+    \item \textbf{Upsert}: Lógica de banco de dados que atualiza um registro se ele existir, ou cria um novo se não existir.
+\end{itemize}
+
+\subsection{Referências}
+\begin{itemize}
+    \item IEEE Std 830-1998, IEEE Recommended Practice for Software Requirements Specifications.
+    \item Conselho Federal de Medicina (CFM) - Resolução sobre Prontuários Eletrônicos e guarda de dados.
+\end{itemize}
+\section{Visão Geral}
+O documento está organizado de forma a detalhar primeiramente o contexto do negócio clínico (Minimundo) e, em seguida, as especificações técnicas, histórias de usuário, arquitetura de subsistemas em MVC e os protótipos de tela.
+
+\section{Perfil do usuário}
+\begin{itemize}
+    \item \textbf{Super Admin}: Desenvolvedores do sistema. Visualizam dados anonimizados para calibrar a IA.
+    \item \textbf{Gestor do Hospital}: Conta jurídica (CNPJ) responsável por gerenciar a clínica e convidar médicos para a plataforma.
+    \item \textbf{Médico}: usuário final (CRM). Interage com pacientes, insere sintomas e analisa o laudo da Inteligência Artificial.
+\end{itemize}
+
+\section{Definição de Requisitos}
+\subsection{Descrição do Propósito do Sistema}
+O propósito geral do sistema é atuar como uma segunda opinião analítica de alta velocidade, processando sinais vitais e anamneses de pacientes para calcular, matematicamente, a probabilidade de risco para o câncer de pulmão, auxiliando médicos na tomada de decisão rápida em ambientes hospitalares.
+
+\subsection{Descrição do Minimundo}
+Em ambientes clínicos e hospitalares, a triagem de pacientes com sintomas respiratórios é um processo crítico. Médicos coletam dados como ocorrência de falta de ar, tosse com sangue, hábitos de fumo e sinais vitais. Muitas vezes, correlações sutis entre múltiplos fatores podem passar despercebidas na correria do plantão, atrasando diagnósticos de câncer de pulmão. O sistema resolve esse problema fornecendo uma interface rápida onde o médico insere o prontuário. O modelo de Machine Learning traduz esses dados e retorna o risco. Como os médicos costumam dar plantão em várias unidades diferentes, o sistema precisa permitir que um único profissional (identificado pelo seu CRM) se vincule a vários hospitais, garantindo que os dados de pacientes de um hospital jamais sejam vistos por outro (Multi-Tenant). Além disso, por exigências legais, prontuários gerados não podem ser deletados fisicamente do banco de dados.
+
+\subsection{Requisitos de Usuário}
+Os requisitos de usuário identificados para o sistema são apresentados a seguir, no formato de \textit{user stories}:
+
+\begin{tabular}{|l|l|l|p{6cm}|p{6cm}|}
+\hline
+\textbf{ID} & \textbf{Depende de} & \textbf{Prioridade} & \textbf{Descrição} & \textbf{Critérios de Aceitação} \\
+\hline
+US01 & Nenhuma & Alta & Eu como Gestor quero cadastrar médicos para formar minha equipe. & 1.1 O sistema deve disparar e-mail de convite. 1.2 O vínculo é ativado após aceite. \\
+\hline
+US02 & US01 & Alta & Eu como Médico quero selecionar um hospital para ver os pacientes do plantão. & 2.1 O painel deve listar apenas prontuários da unidade selecionada. \\
+\hline
+US03 & US02 & Alta & Eu como Médico quero inserir sintomas para obter o risco de câncer. & 3.1 A IA deve retornar a predição. 3.2 Risco $\geq$ 50\% é ``Alto Risco''. \\
+\hline
+US04 & US03 & Média & Eu como Médico quero exportar a triagem para entregar laudo formal. & 4.1 O PDF deve conter CRM, sintomas marcados e a \% de risco. \\
+\hline
+\end{tabular}
+
+\vspace{0.5cm}
+
+\begin{tabular}{|l|p{8cm}|l|l|}
+\hline
+\textbf{ID} & \textbf{Descrição} & \textbf{Categoria} & \textbf{Req. Relacionados} \\
+\hline
+RF01 & Processar dados clínicos (Dicionário) e traduzir em matriz binária para consumo da IA. & Essencial & US03 \\
+\hline
+RF02 & Utilizar lógica de Upsert: atualizar histórico se existir ou criar novo se ID vazio. & Essencial & US03 \\
+\hline
+RF03 & Gerar documentos PDF estáticos com o resumo da triagem. & Importante & US04 \\
+\hline
+\end{tabular}
+
+\end{document}
