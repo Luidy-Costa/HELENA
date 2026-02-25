@@ -1,0 +1,188 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{float}
+
+\geometry{margin=2.5cm}
+
+\title{\textbf{Especificação de Requisitos de Software (ERS)}\\
+Sistema Lung Cancer Prediction}
+
+\author{
+Instituto Federal de Educação, Ciência e Tecnologia do Ceará -- IFCE\\
+Campus Boa Viagem\\
+\\
+Disciplinas: Engenharia de Software / POO / Arquitetura de Sistemas\\
+Professores: Jéssica de Paulo Rodrigues, Renato William R. de Souza, João Isaac S. Miranda\\
+\\
+Equipe: Luidy Costa, Letícia Maciel, Germano Moraes
+}
+
+\date{23 de Fevereiro de 2026 \\ Versão 1.0}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+%-------------------------------------------------
+\section{Introdução}
+
+Este documento apresenta os resultados produzidos durante a fase de Especificação e Análise de Requisitos do sistema Lung Cancer Prediction. São descritos os requisitos funcionais, não funcionais, regras de negócio, subsistemas e modelo de casos de uso.
+
+\subsection{Objetivo}
+
+Especificar os requisitos do sistema Lung Cancer Prediction, descrevendo completamente seu comportamento externo, restrições técnicas e requisitos de qualidade.
+
+\subsection{Escopo}
+
+O sistema é uma aplicação Web no modelo \textit{Software as a Service (SaaS)}, cujo objetivo é fornecer triagem preditiva de risco de câncer de pulmão utilizando Inteligência Artificial.
+
+Estão fora do escopo:
+\begin{itemize}
+    \item Agendamento de consultas
+    \item Faturamento hospitalar
+    \item Controle de estoque
+\end{itemize}
+
+\subsection{Definições e Acrônimos}
+
+\begin{itemize}
+    \item \textbf{Multi-Tenant}: Arquitetura onde uma única instância atende múltiplos hospitais com isolamento lógico de dados.
+    \item \textbf{LGPD}: Lei Geral de Proteção de Dados.
+    \item \textbf{Upsert}: Atualiza registro existente ou cria novo caso não exista.
+\end{itemize}
+
+\subsection{Referências}
+
+\begin{itemize}
+    \item IEEE Std 830-1998 – Recommended Practice for Software Requirements Specifications.
+    \item Resoluções do Conselho Federal de Medicina (CFM).
+\end{itemize}
+
+%-------------------------------------------------
+\section{Definição de Requisitos}
+
+\subsection{Propósito do Sistema}
+
+Atuar como segunda opinião analítica, calculando a probabilidade matemática de risco de câncer de pulmão a partir de sintomas clínicos.
+
+\subsection{Descrição do Minimundo}
+
+Em ambientes hospitalares, médicos coletam dados clínicos como falta de ar, tosse com sangue, histórico de tabagismo e sinais vitais. O sistema transforma esses dados em matriz binária para processamento por modelo de Machine Learning.
+
+O sistema deve:
+\begin{itemize}
+    \item Garantir isolamento Multi-Tenant
+    \item Permitir vínculo de médicos a múltiplos hospitais
+    \item Impedir exclusão física de prontuários
+\end{itemize}
+
+%-------------------------------------------------
+\subsection{Requisitos Funcionais}
+
+\begin{longtable}{|p{1.5cm}|p{3cm}|p{6cm}|p{2cm}|}
+\hline
+\textbf{ID} & \textbf{Nome} & \textbf{Descrição} & \textbf{Prioridade} \\
+\hline
+RF01 & Cadastro de Médicos & Permitir cadastro via convite eletrônico. & Alta \\
+\hline
+RF02 & Seleção de Hospital & Médico visualiza apenas prontuários da unidade selecionada. & Alta \\
+\hline
+RF03 & Registro de Triagem & Registrar sintomas e converter em matriz binária. & Alta \\
+\hline
+RF04 & Classificação de Risco & Classificar como Alto Risco (≥50\%) ou Baixo Risco. & Alta \\
+\hline
+RF05 & Geração de PDF & Gerar laudo com CRM, sintomas e percentual de risco. & Média \\
+\hline
+\end{longtable}
+
+%-------------------------------------------------
+\subsection{Requisitos Não Funcionais}
+
+\begin{longtable}{|p{1.5cm}|p{4cm}|p{6cm}|p{2cm}|}
+\hline
+\textbf{ID} & \textbf{Categoria} & \textbf{Descrição} & \textbf{Prioridade} \\
+\hline
+RNF01 & Segurança & Conformidade com LGPD e anonimização de dados. & Alta \\
+\hline
+RNF02 & Arquitetura & Isolamento Multi-Tenant. & Alta \\
+\hline
+RNF03 & Desempenho & Predição retornada em até 3 segundos. & Alta \\
+\hline
+RNF04 & Manutenibilidade & Armazenamento flexível em JSON. & Alta \\
+\hline
+RNF05 & Disponibilidade & Sistema disponível 24/7. & Média \\
+\hline
+RNF06 & Usabilidade & Formulário preenchido em até 2 minutos. & Média \\
+\hline
+\end{longtable}
+
+%-------------------------------------------------
+\subsection{Regras de Negócio}
+
+\begin{itemize}
+    \item RN01: Percentual ≥ 50\% classificado como Alto Risco.
+    \item RN02: Soft Delete – prontuários não podem ser excluídos.
+    \item RN03: Médico pode estar vinculado a múltiplos hospitais.
+    \item RN04: Laudo PDF não pode ser alterado após geração.
+\end{itemize}
+
+%-------------------------------------------------
+\section{Identificação de Subsistemas}
+
+\begin{longtable}{|p{4cm}|p{9cm}|}
+\hline
+\textbf{Subsistema} & \textbf{Descrição} \\
+\hline
+View (Frontend) & Interface React (login, formulário e download de PDF). \\
+\hline
+Controller (Backend) & API REST em Flask com lógica de negócios. \\
+\hline
+Model (IA e Banco) & Módulo Python com modelo treinado e banco SQL. \\
+\hline
+\end{longtable}
+
+%-------------------------------------------------
+\section{Modelo de Casos de Uso}
+
+\begin{longtable}{|p{4cm}|p{9cm}|}
+\hline
+\textbf{Ator} & \textbf{Descrição} \\
+\hline
+Gestor Hospitalar & Gerencia vínculos de médicos. \\
+\hline
+Médico & Realiza triagens clínicas. \\
+\hline
+Super Admin & Visualiza dados anonimizados para calibragem da IA. \\
+\hline
+\end{longtable}
+
+%-------------------------------------------------
+\section{Protótipo}
+
+\subsection{Dashboard Médico}
+
+Tela responsável por exibir histórico de triagens realizadas.
+
+\subsection{Formulário Clínico}
+
+Tela onde o médico insere sintomas para cálculo da predição.
+
+\vfill
+\begin{center}
+\textit{Documento elaborado conforme IEEE 830-1998}
+\end{center}
+
+\end{document}
