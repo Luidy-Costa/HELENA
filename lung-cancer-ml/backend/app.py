@@ -62,5 +62,55 @@ def cadastrar_hospital():
         cursor.close()
         conn.close()
 
+#rota de cadastro do médico (Fluxo isolado, sem vínculo inicial)
+@app.route('/api/medicos', methods=["POST"])
+def cadastrar_medico():
+    dados = request.json
+
+    nome = dados.get('nome')
+    crm = dados.get('crm')
+    email = dados.get('email')
+    senha_bruta = dados.get('senha')
+
+    # Valida apenas os dados do próprio médico
+    if not nome or not crm or not email or not senha_bruta:
+        return jsonify({"erro": "Todos os campos do médico são obrigatórios!"}), 400
+     
+    senha_segura = generate_password_hash(senha_bruta)
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Falha na conexão com o banco de dados."}), 500
+     
+    try:
+        cursor = conn.cursor()
+        
+        # Cria o médico de forma independente
+        cursor.execute("""
+            INSERT INTO medicos (nome_completo, crm, email_recuperacao, senha_hash)
+            VALUES (%s, %s, %s, %s) 
+            RETURNING id;
+        """, (nome, crm, email, senha_segura))
+         
+        medico_id = cursor.fetchone()[0]
+     
+        conn.commit()
+     
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": "Médico cadastrado com sucesso! Perfil pronto para receber convites.",
+            "medico_id": medico_id
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'erro': f'Erro ao cadastrar no banco: {str(e)}'}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
