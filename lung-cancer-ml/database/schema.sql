@@ -1,6 +1,3 @@
--- =====================================================================
--- SISTEMA LUNG PREDICTION SAAS - ARQUITETURA DE BANCO DE DADOS
--- =====================================================================
 
 -- 1. Desenvolvedores do Sistema (Super Admins)
 CREATE TABLE super_admins (
@@ -8,6 +5,7 @@ CREATE TABLE super_admins (
     nome_completo VARCHAR(150) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
+    foto_perfil VARCHAR(255), -- <--- Adicionado direto aqui
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -18,6 +16,7 @@ CREATE TABLE hospitais (
     cnpj VARCHAR(18) UNIQUE NOT NULL, 
     email_recuperacao VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
+    foto_perfil VARCHAR(255), -- <--- Adicionado direto aqui
     ativo BOOLEAN DEFAULT TRUE,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -29,6 +28,7 @@ CREATE TABLE medicos (
     crm VARCHAR(20) UNIQUE NOT NULL,
     email_recuperacao VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
+    foto_perfil VARCHAR(255), -- <--- Adicionado direto aqui
     ativo BOOLEAN DEFAULT TRUE,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -52,7 +52,7 @@ CREATE TABLE pacientes (
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. O Coração do Sistema (Triagens da Inteligência Artificial)
+-- 6. O Coração do Sistema (Predições da Inteligência Artificial)
 CREATE TABLE predicao (
     id SERIAL PRIMARY KEY,
     paciente_id INT NOT NULL REFERENCES pacientes(id),
@@ -62,8 +62,18 @@ CREATE TABLE predicao (
     dados_clinicos JSONB NOT NULL, 
     probabilidade_risco DECIMAL(5,2) NOT NULL,
     diagnostico_final VARCHAR(50) NOT NULL,
+    observacao VARCHAR(300), -- <--- Adicionado direto aqui
     
     data_predicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    
+    
+    -- 1º: Apaga a predição (o filho de todos)
+DELETE FROM predicao;
 
-ALTER TABLE predicao ADD COLUMN observacao VARCHAR(300);
+-- 2º: Apaga o paciente (filho do hospital)
+DELETE FROM pacientes;
+
+-- 3º e 4º: Apaga o médico e o hospital (os pais)
+DELETE FROM medicos;
+DELETE FROM hospitais;
+);
