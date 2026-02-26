@@ -65,3 +65,5 @@ CREATE TABLE predicao (
     
     data_predicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE predicao ADD COLUMN observacao VARCHAR(300);
