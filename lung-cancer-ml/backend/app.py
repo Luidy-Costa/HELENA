@@ -1,6 +1,8 @@
 #importando as bibliotecas 
 from flask import Flask, jsonify, request
 from werkzeug.security import generate_password_hash,check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+import datetime
 import os, sys
 
 #ensinando a rota para a pasta models onde tem o arquivo "conexao" com a função que conecta o banco de dados
@@ -9,6 +11,12 @@ from conexao import obter_conexao
 
 #iniciando o servidor 
 app = Flask(__name__)
+
+app.config['JWT_SECRET_KEY'] = 'Carimbo_super_secreto'
+
+app.config['JWT_ACCESS_TOKEN_EXPIRES']=datetime.timedelta(hours=1)
+
+jwt = JWTManager(app)
 
 #uma rota de aferição do servidor, para ver se ele esta realmente ligado
 @app.route('/api/health', methods=['GET'])
