@@ -5,7 +5,7 @@ CREATE TABLE super_admins (
     nome_completo VARCHAR(150) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
-    foto_perfil VARCHAR(255), -- <--- Adicionado direto aqui
+    foto_perfil VARCHAR(255),
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -16,7 +16,7 @@ CREATE TABLE hospitais (
     cnpj VARCHAR(18) UNIQUE NOT NULL, 
     email_recuperacao VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
-    foto_perfil VARCHAR(255), -- <--- Adicionado direto aqui
+    foto_perfil VARCHAR(255),
     ativo BOOLEAN DEFAULT TRUE,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -28,7 +28,7 @@ CREATE TABLE medicos (
     crm VARCHAR(20) UNIQUE NOT NULL,
     email_recuperacao VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
-    foto_perfil VARCHAR(255), -- <--- Adicionado direto aqui
+    foto_perfil VARCHAR(255),
     ativo BOOLEAN DEFAULT TRUE,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -43,7 +43,7 @@ CREATE TABLE vinculos_hospital_medico (
     UNIQUE (hospital_id, medico_id) 
 );
 
--- 5. Pacientes (Blindagem LGPD - Pertencem ao Hospital e sem CPF)
+-- 5. Pacientes (pertencentes ao hospital, em hospitais diferentes é um novo perfil)
 CREATE TABLE pacientes (
     id SERIAL PRIMARY KEY, 
     hospital_id INT NOT NULL REFERENCES hospitais(id),
@@ -52,7 +52,7 @@ CREATE TABLE pacientes (
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. O Coração do Sistema (Predições da Inteligência Artificial)
+-- 6. As predições que serão adicionadas no perfil do paciente
 CREATE TABLE predicao (
     id SERIAL PRIMARY KEY,
     paciente_id INT NOT NULL REFERENCES pacientes(id),
@@ -62,18 +62,7 @@ CREATE TABLE predicao (
     dados_clinicos JSONB NOT NULL, 
     probabilidade_risco DECIMAL(5,2) NOT NULL,
     diagnostico_final VARCHAR(50) NOT NULL,
-    observacao VARCHAR(300), -- <--- Adicionado direto aqui
+    observacao VARCHAR(300),
     
     data_predicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    
-    
-    -- 1º: Apaga a predição (o filho de todos)
-DELETE FROM predicao;
-
--- 2º: Apaga o paciente (filho do hospital)
-DELETE FROM pacientes;
-
--- 3º e 4º: Apaga o médico e o hospital (os pais)
-DELETE FROM medicos;
-DELETE FROM hospitais;
 );
