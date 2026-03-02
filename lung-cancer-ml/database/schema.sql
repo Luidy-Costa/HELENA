@@ -66,3 +66,16 @@ CREATE TABLE predicao (
     
     data_predicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE recuperacao_senha (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(150) NOT NULL,
+    codigo VARCHAR(5) NOT NULL,
+    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data_expiracao TIMESTAMP NOT NULL,
+    utilizado BOOLEAN DEFAULT FALSE
+);
+
+ALTER TABLE medicos RENAME COLUMN email_recuperacao TO email;
+
+ALTER TABLE hospitais RENAME COLUMN email_recuperacao TO email;
