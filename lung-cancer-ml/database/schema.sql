@@ -1,6 +1,6 @@
 
--- 1. Desenvolvedores do Sistema (Super Admins)
-CREATE TABLE super_admins (
+-- 1. Desenvolvedores do Sistema (Admins)
+CREATE TABLE admins (
     id SERIAL PRIMARY KEY,
     nome_completo VARCHAR(150) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
