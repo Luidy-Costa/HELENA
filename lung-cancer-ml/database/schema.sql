@@ -14,7 +14,7 @@ CREATE TABLE hospitais (
     id SERIAL PRIMARY KEY,
     nome_fantasia VARCHAR(150) NOT NULL,
     cnpj VARCHAR(18) UNIQUE NOT NULL, 
-    email_recuperacao VARCHAR(150) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     foto_perfil VARCHAR(255),
     ativo BOOLEAN DEFAULT TRUE,
@@ -26,7 +26,7 @@ CREATE TABLE medicos (
     id SERIAL PRIMARY KEY,
     nome_completo VARCHAR(150) NOT NULL,
     crm VARCHAR(20) UNIQUE NOT NULL,
-    email_recuperacao VARCHAR(150) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     foto_perfil VARCHAR(255),
     ativo BOOLEAN DEFAULT TRUE,
@@ -75,7 +75,3 @@ CREATE TABLE recuperacao_senha (
     data_expiracao TIMESTAMP NOT NULL,
     utilizado BOOLEAN DEFAULT FALSE
 );
-
-ALTER TABLE medicos RENAME COLUMN email_recuperacao TO email;
-
-ALTER TABLE hospitais RENAME COLUMN email_recuperacao TO email;
