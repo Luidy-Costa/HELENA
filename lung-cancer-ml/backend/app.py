@@ -590,6 +590,297 @@ def redefinir_senha_limpo():
         cursor.close()
         conn.close()
 
+# ==============================================================================
+# MOTOR DE VÍNCULOS (HOSPITAL <-> MÉDICO)
+# ==============================================================================
+
+# 1. Rota Inteligente: Enviar Convite (ou Reenviar se já estiver pendente)
+@app.route('/api/vinculos/convidar', methods=['POST'])
+@jwt_required()
+def convidar_medico():
+    cracha = get_jwt()
+    hospital_id = get_jwt_identity()
+
+    # Segurança: Só hospitais entram aqui
+    if cracha.get('tipo') != 'hospital':
+        return jsonify({"erro": "Acesso negado! Apenas hospitais podem enviar convites."}), 403
+
+    dados = request.json
+    email_medico = dados.get('email_medico') # Usando E-mail como chave
+
+    if not email_medico:
+        return jsonify({"erro": "O e-mail do médico é obrigatório para enviar o convite!"}), 400
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Falha na conexão com a base de dados."}), 500
+
+    try:
+        cursor = conn.cursor()
+        
+        # Passo A: Descobrir o ID do médico através do E-mail
+        cursor.execute("SELECT id, nome_completo FROM medicos WHERE email = %s;", (email_medico,))
+        medico = cursor.fetchone()
+
+        if not medico:
+            return jsonify({"erro": "Nenhum médico encontrado com este e-mail no sistema."}), 404
+            
+        medico_id = medico[0]
+        nome_medico = medico[1]
+
+        # Passo B: Verificação de "Anti-Spam" e Idempotência
+        # Antes de inserir, verificamos se já existe alguma relação entre este hospital e este médico
+        cursor.execute("""
+            SELECT status FROM vinculos_hospital_medico 
+            WHERE hospital_id = %s AND medico_id = %s;
+        """, (hospital_id, medico_id))
+        
+        vinculo_existente = cursor.fetchone()
+
+        if vinculo_existente:
+            status_atual = vinculo_existente[0]
+            
+            # CASO 1: Convite já existe e está pendente -> Reenviamos o e-mail (Simulação)
+            if status_atual == 'Pendente':
+                print("\n" + "="*50)
+                print(f"📧 [REENVIO] EMAIL SIMULADO PARA: {email_medico}")
+                print(f"🏥 Olá Dr(a) {nome_medico}, o Hospital (ID: {hospital_id}) reenviou o convite para você!")
+                print("="*50 + "\n")
+                
+                return jsonify({
+                    "status": "sucesso",
+                    "mensagem": f"O convite já estava pendente e foi reenviado com sucesso para o e-mail do Dr(a). {nome_medico}!"
+                }), 200
+                
+            # CASO 2: Médico já trabalha lá -> Erro
+            elif status_atual == 'Ativo':
+                return jsonify({"erro": f"O Dr(a). {nome_medico} já faz parte da sua equipe clínica."}), 400
+
+        # Passo C: Se não existe vínculo nenhum, fazemos o INSERT original
+        cursor.execute("""
+            INSERT INTO vinculos_hospital_medico (hospital_id, medico_id)
+            VALUES (%s, %s);
+        """, (hospital_id, medico_id))
+        
+        conn.commit()
+
+        # Simula o envio do primeiro e-mail
+        print("\n" + "="*50)
+        print(f"📧 [NOVO] EMAIL SIMULADO PARA: {email_medico}")
+        print(f"🏥 Olá Dr(a) {nome_medico}, o Hospital (ID: {hospital_id}) acabou de convidar você!")
+        print("="*50 + "\n")
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"Convite enviado com sucesso para o Dr(a). {nome_medico}!"
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'erro': f'Erro ao enviar convite: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# 2. Rota para o Médico aceitar o convite
+@app.route('/api/vinculos/aceitar', methods=['PUT'])
+@jwt_required()
+def aceitar_convite():
+    cracha = get_jwt()
+    medico_id = get_jwt_identity()
+
+    # Segurança: Só médicos entram aqui
+    if cracha.get('tipo') != 'medico':
+        return jsonify({"erro": "Acesso negado! Apenas médicos podem aceitar convites."}), 403
+
+    dados = request.json
+    hospital_id = dados.get('hospital_id')
+
+    if not hospital_id:
+        return jsonify({"erro": "O ID do hospital é obrigatório!"}), 400
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Falha na conexão com a base de dados."}), 500
+
+    try:
+        cursor = conn.cursor()
+        
+        # O Médico atualiza o status de 'Pendente' para 'Ativo'
+        # A cláusula WHERE garante que ele só aceita convites que foram realmente feitos para ele
+        cursor.execute("""
+            UPDATE vinculos_hospital_medico 
+            SET status = 'Ativo' 
+            WHERE medico_id = %s AND hospital_id = %s AND status = 'Pendente';
+        """, (medico_id, hospital_id))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"erro": "Convite não encontrado, já aceito ou rejeitado."}), 404
+            
+        conn.commit()
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": "Convite aceito com sucesso! Você agora faz parte da equipe deste hospital."
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'erro': f'Erro ao aceitar o convite: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# 3. Rota para o Médico REJEITAR um convite (Apaga o vínculo pendente)
+@app.route('/api/vinculos/rejeitar', methods=['DELETE'])
+@jwt_required()
+def rejeitar_convite():
+    cracha = get_jwt()
+    medico_id = get_jwt_identity()
+
+    # Segurança: Apenas médicos podem rejeitar
+    if cracha.get('tipo') != 'medico':
+        return jsonify({"erro": "Acesso negado! Apenas médicos podem rejeitar convites."}), 403
+
+    dados = request.json
+    hospital_id = dados.get('hospital_id')
+
+    if not hospital_id:
+        return jsonify({"erro": "O ID do hospital é obrigatório para rejeitar!"}), 400
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Falha na conexão com a base de dados."}), 500
+
+    try:
+        cursor = conn.cursor()
+        
+        # O DELETE seguro: Só apaga se for do próprio médico, do hospital certo E se estiver 'Pendente'
+        # Isso impede que o médico apague um vínculo 'Ativo' (emprego atual) por essa rota
+        cursor.execute("""
+            DELETE FROM vinculos_hospital_medico 
+            WHERE medico_id = %s AND hospital_id = %s AND status = 'Pendente';
+        """, (medico_id, hospital_id))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"erro": "Convite não encontrado ou você já trabalha neste hospital (vínculo ativo)."}), 404
+            
+        conn.commit()
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": "Convite rejeitado e removido. O hospital poderá convidá-lo novamente no futuro."
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'erro': f'Erro ao rejeitar o convite: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==============================================================================
+# ROTAS DE LEITURA (LISTAGEM DE VÍNCULOS)
+# ==============================================================================
+
+# 4. Rota para o HOSPITAL ver sua equipe (Ativos e Pendentes)
+@app.route('/api/hospitais/vinculos', methods=['GET'])
+@jwt_required()
+def listar_medicos_do_hospital():
+    cracha = get_jwt()
+    hospital_id = get_jwt_identity()
+
+    if cracha.get('tipo') != 'hospital':
+        return jsonify({"erro": "Acesso negado."}), 403
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Falha na conexão."}), 500
+
+    try:
+        cursor = conn.cursor()
+        
+        # O PULO DO GATO: Usamos JOIN para pegar o Nome e o CRM da tabela de médicos
+        # baseando-se nos IDs que estão na tabela de vínculos
+        cursor.execute("""
+            SELECT m.id, m.nome_completo, m.crm, m.email, v.status, v.data_vinculo
+            FROM vinculos_hospital_medico v
+            JOIN medicos m ON v.medico_id = m.id
+            WHERE v.hospital_id = %s
+            ORDER BY v.status DESC, m.nome_completo ASC;
+        """, (hospital_id,))
+        
+        resultado = cursor.fetchall()
+        
+        # Transformando a lista crua do banco em um JSON bonito para o React
+        lista_equipe = []
+        for linha in resultado:
+            lista_equipe.append({
+                "medico_id": linha[0],
+                "nome": linha[1],
+                "crm": linha[2],
+                "email": linha[3],
+                "status": linha[4], # 'Ativo' ou 'Pendente'
+                "desde": linha[5]
+            })
+
+        return jsonify(lista_equipe), 200
+
+    except Exception as e:
+        return jsonify({'erro': f'Erro ao listar equipe: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# 5. Rota para o MÉDICO ver seus hospitais (Empregos e Convites)
+@app.route('/api/medicos/vinculos', methods=['GET'])
+@jwt_required()
+def listar_hospitais_do_medico():
+    cracha = get_jwt()
+    medico_id = get_jwt_identity()
+
+    if cracha.get('tipo') != 'medico':
+        return jsonify({"erro": "Acesso negado."}), 403
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Falha na conexão."}), 500
+
+    try:
+        cursor = conn.cursor()
+        
+        # CORREÇÃO: Trocamos 'v.data_convite' por 'v.data_vinculo'
+        cursor.execute("""
+            SELECT h.id, h.nome_fantasia, h.cnpj, v.status, v.data_vinculo
+            FROM vinculos_hospital_medico v
+            JOIN hospitais h ON v.hospital_id = h.id
+            WHERE v.medico_id = %s
+            ORDER BY v.status DESC;
+        """, (medico_id,))
+        
+        resultado = cursor.fetchall()
+        
+        lista_hospitais = []
+        for linha in resultado:
+            lista_hospitais.append({
+                "hospital_id": linha[0],
+                "nome_hospital": linha[1],
+                "cnpj": linha[2],
+                "status": linha[3], 
+                "data": linha[4] # Agora está lendo da coluna que existe de verdade
+            })
+
+        return jsonify(lista_hospitais), 200
+
+    except Exception as e:
+        return jsonify({'erro': f'Erro ao listar hospitais: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 
 # ligando o servidor
 if __name__ == '__main__':
