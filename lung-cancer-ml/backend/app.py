@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import datetime
 import os, sys
 import random
+import json
 
 # ensinando a rota para a pasta models onde tem o arquivo "conexao" com a função que conecta o banco de dados
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"models")))
@@ -877,6 +878,362 @@ def listar_hospitais_do_medico():
 
     except Exception as e:
         return jsonify({'erro': f'Erro ao listar hospitais: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==============================================================================
+# MOTOR DE INTELIGÊNCIA (PREDIÇÃO COM VALIDAÇÃO DE ID)
+# ==============================================================================
+
+@app.route('/api/predicoes/analisar', methods=['POST'])
+@jwt_required()
+def realizar_predicao():
+    cracha = get_jwt()
+    medico_id = get_jwt_identity()
+
+    if cracha.get('tipo') != 'medico':
+        return jsonify({"erro": "Apenas médicos podem realizar diagnósticos."}), 403
+
+    dados = request.json
+    
+    # Agora aceitamos o paciente_id (pode vir preenchido ou nulo)
+    paciente_id = dados.get('paciente_id') 
+    
+    hospital_id = dados.get('hospital_id')
+    nome_paciente_input = dados.get('nome_paciente')
+    data_nascimento = dados.get('data_nascimento')
+    dados_clinicos = dados.get('dados_clinicos')
+
+    # Validação: Nome e Hospital são sempre obrigatórios, mesmo se tiver ID
+    if not all([hospital_id, nome_paciente_input, dados_clinicos]):
+        return jsonify({"erro": "Dados incompletos! Hospital, nome e dados clínicos são obrigatórios."}), 400
+
+    conn = obter_conexao()
+    if not conn:
+        return jsonify({"erro": "Erro de conexão."}), 500
+
+    try:
+        cursor = conn.cursor()
+
+        # ------------------------------------------------------------------
+        # PASSO 1: DEFINIÇÃO DO PACIENTE (VALIDAR ID ou CRIAR NOVO)
+        # ------------------------------------------------------------------
+        
+        id_final_paciente = None
+        msg_paciente = ""
+
+        if paciente_id:
+            # CASO A: O ID FOI INFORMADO -> TEMOS QUE VALIDAR
+            cursor.execute("""
+                SELECT nome_completo, data_nascimento FROM pacientes 
+                WHERE id = %s AND hospital_id = %s;
+            """, (paciente_id, hospital_id))
+            
+            paciente_banco = cursor.fetchone()
+
+            if not paciente_banco:
+                return jsonify({"erro": f"Paciente com ID {paciente_id} não encontrado neste hospital."}), 404
+            
+            nome_banco = paciente_banco[0]
+            
+            # TRAVA DE SEGURANÇA: O nome digitado bate com o nome do ID?
+            # Usamos lower() e strip() para ignorar maiúsculas/minúsculas e espaços extras
+            if nome_paciente_input.strip().lower() != nome_banco.strip().lower():
+                return jsonify({
+                    "erro": "Conflito de Identidade!",
+                    "detalhes": f"O ID {paciente_id} pertence a '{nome_banco}', mas você enviou o nome '{nome_paciente_input}'. Verifique se selecionou o paciente correto."
+                }), 409 # Conflict
+
+            # Se passou na trava, usamos esse ID
+            id_final_paciente = paciente_id
+            msg_paciente = "Paciente identificado e validado pelo ID."
+
+        else:
+            # CASO B: NÃO TEM ID -> CRIAR NOVO PERFIL
+            if not data_nascimento:
+                 return jsonify({"erro": "Para novos pacientes, a data de nascimento é obrigatória!"}), 400
+
+            cursor.execute("""
+                INSERT INTO pacientes (hospital_id, nome_completo, data_nascimento)
+                VALUES (%s, %s, %s)
+                RETURNING id;
+            """, (hospital_id, nome_paciente_input, data_nascimento))
+            
+            id_final_paciente = cursor.fetchone()[0]
+            msg_paciente = "Novo perfil de paciente criado com sucesso."
+
+
+        # ------------------------------------------------------------------
+        # PASSO 2: SIMULAÇÃO DA IA (MOCK)
+        # ------------------------------------------------------------------
+        
+        fumante = dados_clinicos.get('fumante', False)
+        idade = dados_clinicos.get('idade', 0)
+        
+        # Lógica Fictícia:
+        probabilidade = 0.0
+        if fumante: probabilidade += 40.0
+        if idade > 60: probabilidade += 30.0
+        
+        # Fator aleatório para teste
+        probabilidade += random.uniform(0, 20)
+        probabilidade = min(probabilidade, 99.9)
+
+        diagnostico = "Alto Risco" if probabilidade > 50 else "Baixo Risco"
+
+        # ------------------------------------------------------------------
+        # PASSO 3: SALVAR A PREDIÇÃO
+        # ------------------------------------------------------------------
+        
+        dados_clinicos_json = json.dumps(dados_clinicos)
+
+        cursor.execute("""
+            INSERT INTO predicao 
+            (paciente_id, medico_id, hospital_id, dados_clinicos, probabilidade_risco, diagnostico_final)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id;
+        """, (id_final_paciente, medico_id, hospital_id, dados_clinicos_json, probabilidade, diagnostico))
+        
+        predicao_id = cursor.fetchone()[0]
+        conn.commit()
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem_sistema": f"Análise concluída. {msg_paciente}",
+            "resultado": {
+                "predicao_id": predicao_id,
+                "paciente_id": id_final_paciente,
+                "paciente_nome": nome_paciente_input,
+                "diagnostico": diagnostico,
+                "probabilidade": round(probabilidade, 2)
+            }
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'erro': f'Erro no processamento: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==============================================================================
+# ROTAS DE LEITURA (LISTA DE PACIENTES E HISTÓRICO)
+# ==============================================================================
+
+# Rota A: Listar pacientes (COM SEGURANÇA DE VÍNCULO E ISOLAMENTO)
+@app.route('/api/pacientes/hospital/<int:hospital_id>', methods=['GET'])
+@jwt_required()
+def listar_pacientes_hospital(hospital_id):
+    cracha = get_jwt()
+    usuario_id = get_jwt_identity()
+    tipo_usuario = cracha.get('tipo')
+
+    conn = obter_conexao()
+    if not conn: return jsonify({"erro": "Erro de conexão"}), 500
+
+    try:
+        cursor = conn.cursor()
+
+        # --- CAMADA DE SEGURANÇA (O FILTRO) ---
+        
+        if tipo_usuario == 'hospital':
+            # Regra: O Hospital logado (usuario_id) só pode ver a lista dele mesmo (hospital_id da URL)
+            # Como o ID vem como string no JWT e int na URL, garantimos a comparação correta
+            if int(usuario_id) != hospital_id:
+                return jsonify({"erro": "Alerta de Segurança: Você não pode acessar os dados de outro hospital!"}), 403
+
+        elif tipo_usuario == 'medico':
+            # Regra: O Médico só pode ver a lista SE tiver vínculo ATIVO com este hospital
+            cursor.execute("""
+                SELECT 1 FROM vinculos_hospital_medico 
+                WHERE medico_id = %s AND hospital_id = %s AND status = 'Ativo';
+            """, (usuario_id, hospital_id))
+            
+            if not cursor.fetchone():
+                return jsonify({"erro": "Acesso negado! Você não trabalha neste hospital."}), 403
+
+        else:
+            return jsonify({"erro": "Tipo de usuário não autorizado."}), 403
+
+        # --- BUSCA DOS DADOS (SE PASSOU NA SEGURANÇA) ---
+        
+        cursor.execute("""
+            SELECT id, nome_completo, data_nascimento 
+            FROM pacientes 
+            WHERE hospital_id = %s
+            ORDER BY nome_completo ASC;
+        """, (hospital_id,))
+        
+        pacientes = cursor.fetchall()
+        
+        lista = []
+        for p in pacientes:
+            lista.append({
+                "id": p[0],
+                "nome": p[1],
+                "data_nascimento": str(p[2])
+            })
+            
+        return jsonify(lista), 200
+
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# Rota B: Ver Histórico (COM TRIÂNGULO DE SEGURANÇA)
+@app.route('/api/pacientes/<int:paciente_id>/historico', methods=['GET'])
+@jwt_required()
+def historico_paciente(paciente_id):
+    cracha = get_jwt()
+    medico_id = get_jwt_identity()
+
+    # 1. Primeira trava: Só médicos entram
+    if cracha.get('tipo') != 'medico':
+         return jsonify({"erro": "Apenas médicos podem acessar históricos."}), 403
+    
+    conn = obter_conexao()
+    if not conn: return jsonify({"erro": "Erro de conexão"}), 500
+
+    try:
+        cursor = conn.cursor()
+
+        # A QUERY DO "TRIÂNGULO DE SEGURANÇA"
+        # Nós não buscamos apenas pela predicao. Nós forçamos o caminho:
+        # Predição -> Paciente -> Hospital -> Vínculo -> Médico
+        
+        cursor.execute("""
+            SELECT 
+                pr.id, 
+                pr.data_predicao, 
+                pr.diagnostico_final, 
+                pr.probabilidade_risco
+            FROM predicao pr
+            -- 1. Pega os dados do Paciente dono dessa predição
+            JOIN pacientes p ON pr.paciente_id = p.id
+            
+            -- 2. AQUI ESTÁ A MÁGICA DE SEGURANÇA:
+            -- Nós olhamos a tabela de vínculos e procuramos se existe uma linha
+            -- que conecta o HOSPITAL DESTE PACIENTE (p.hospital_id)
+            -- com o MÉDICO QUE ESTÁ LOGADO (v.medico_id = %s)
+            JOIN vinculos_hospital_medico v ON p.hospital_id = v.hospital_id
+            
+            WHERE 
+                pr.paciente_id = %s      -- O Paciente que você pediu
+                AND v.medico_id = %s     -- O Seu ID de médico (vem do Token, impossível falsificar)
+                AND v.status = 'Ativo'   -- Você tem que estar trabalhando lá ativamente
+            
+            ORDER BY pr.data_predicao DESC;
+        """, (paciente_id, medico_id))
+        
+        historico = cursor.fetchall()
+        
+        # Se o médico não tiver vínculo com o hospital desse paciente,
+        # o JOIN vai falhar e a lista virá vazia [].
+        # Para o médico malandro, vai parecer que o paciente não tem histórico nenhum.
+        
+        lista_historico = []
+        for h in historico:
+            lista_historico.append({
+                "predicao_id": h[0],
+                "data": str(h[1]),
+                "diagnostico": h[2],
+                "risco": float(h[3])
+            })
+            
+        return jsonify(lista_historico), 200
+
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==============================================================================
+# DASHBOARDS E KPIs (DADOS PARA AS TELAS INICIAIS)
+# ==============================================================================
+
+@app.route('/api/dashboard/resumo', methods=['GET'])
+@jwt_required()
+def dashboard_resumo():
+    cracha = get_jwt()
+    usuario_id = get_jwt_identity()
+    tipo = cracha.get('tipo')
+
+    conn = obter_conexao()
+    if not conn: return jsonify({"erro": "Erro de conexão"}), 500
+    cursor = conn.cursor()
+
+    try:
+        dados = {}
+
+        # 1. VISÃO DO ADMIN (Vê tudo globalmente)
+        if tipo == 'admin':
+            # Total Hospitais
+            cursor.execute("SELECT COUNT(*) FROM hospitais WHERE status = 'Ativo'")
+            dados['total_hospitais'] = cursor.fetchone()[0]
+            
+            # Total Médicos
+            cursor.execute("SELECT COUNT(*) FROM medicos")
+            dados['total_medicos'] = cursor.fetchone()[0]
+            
+            # Total Pacientes
+            cursor.execute("SELECT COUNT(*) FROM pacientes")
+            dados['total_pacientes'] = cursor.fetchone()[0]
+            
+            # Avaliações do Mês (Geral)
+            cursor.execute("""
+                SELECT COUNT(*) FROM predicao 
+                WHERE date_part('month', data_predicao) = date_part('month', CURRENT_DATE)
+                AND date_part('year', data_predicao) = date_part('year', CURRENT_DATE);
+            """)
+            dados['avaliacoes_mes'] = cursor.fetchone()[0]
+
+        # 2. VISÃO DO HOSPITAL (Vê só do seu hospital)
+        elif tipo == 'hospital':
+            # Total Médicos da Equipe
+            cursor.execute("SELECT COUNT(*) FROM vinculos_hospital_medico WHERE hospital_id = %s AND status = 'Ativo'", (usuario_id,))
+            dados['medicos_ativos'] = cursor.fetchone()[0]
+            
+            # Total Pacientes do Hospital
+            cursor.execute("SELECT COUNT(*) FROM pacientes WHERE hospital_id = %s", (usuario_id,))
+            dados['total_pacientes'] = cursor.fetchone()[0]
+            
+            # Avaliações do Mês e Alto Risco
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) FILTER (WHERE date_part('month', data_predicao) = date_part('month', CURRENT_DATE)),
+                    COUNT(*) FILTER (WHERE diagnostico_final = 'Alto Risco')
+                FROM predicao WHERE hospital_id = %s
+            """, (usuario_id,))
+            res = cursor.fetchone()
+            dados['avaliacoes_mes'] = res[0]
+            dados['pacientes_alto_risco'] = res[1]
+
+        # 3. VISÃO DO MÉDICO (Vê seus números pessoais)
+        elif tipo == 'medico':
+            # Total Hospitais que trabalha
+            cursor.execute("SELECT COUNT(*) FROM vinculos_hospital_medico WHERE medico_id = %s AND status = 'Ativo'", (usuario_id,))
+            dados['meus_hospitais'] = cursor.fetchone()[0]
+            
+            # Total Pacientes atendidos por ele
+            cursor.execute("SELECT COUNT(DISTINCT paciente_id) FROM predicao WHERE medico_id = %s", (usuario_id,))
+            dados['meus_pacientes'] = cursor.fetchone()[0]
+            
+            # Avaliações que ELE fez no mês
+            cursor.execute("""
+                SELECT COUNT(*) FROM predicao 
+                WHERE medico_id = %s 
+                AND date_part('month', data_predicao) = date_part('month', CURRENT_DATE)
+            """, (usuario_id,))
+            dados['minhas_avaliacoes_mes'] = cursor.fetchone()[0]
+
+        return jsonify(dados), 200
+
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
     finally:
         cursor.close()
         conn.close()
