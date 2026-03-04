@@ -75,3 +75,12 @@ CREATE TABLE recuperacao_senha (
     data_expiracao TIMESTAMP NOT NULL,
     utilizado BOOLEAN DEFAULT FALSE
 );
+
+ALTER DATABASE postgres RENAME TO "Lung_Cancer_Prediction_DB";
+
+
+-- Substitua 'NOME_ATUAL_DO_BANCO' pelo nome que ele tem hoje
+SELECT pg_terminate_backend(pid) 
+FROM pg_stat_activity 
+WHERE datname = 'postgres' 
+AND pid <> pg_backend_pid();
