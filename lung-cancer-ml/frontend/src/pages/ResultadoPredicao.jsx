@@ -50,7 +50,7 @@ export default function ResultadoPredicao() {
       
       {/* Botão de Voltar */}
       <button 
-        onClick={() => navigate('/hospital-interna')}
+        onClick={() => navigate('/perfil-paciente')}
         className="flex items-center gap-2 text-[#6eb1be] hover:text-[#0b2b3f] transition-colors font-bold text-sm mb-6"
       >
         <ArrowLeft size={16} /> Voltar para Pacientes
