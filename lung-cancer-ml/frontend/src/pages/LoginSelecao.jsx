@@ -91,17 +91,6 @@ export default function LoginSelecao() {
         >
           Entrar
         </button>
-
-        {/* Link Cadastro */}
-        <p className="mt-8 text-center text-sm text-[#0b2b3f] font-medium">
-          Não possui conta?{" "}
-          <button
-            onClick={() => navigate("/cadastro-medico")}
-            className="text-[#6eb1be] hover:underline font-bold ml-1 cursor-pointer"
-          >
-            Cadastre-se
-          </button>
-        </p>
       </div>
     </AuthLayout>
   );
