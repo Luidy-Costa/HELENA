@@ -13,6 +13,8 @@ export default function LoginMedico() {
     e.preventDefault();
     console.log("Tentando logar:", { crm, senha });
     // Futuramente: Integração com o /api/login/medico do Flask
+
+    navigate('/painel-medico');
   };
 
   return (
