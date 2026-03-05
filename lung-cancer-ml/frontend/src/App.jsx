@@ -5,7 +5,9 @@ import CadastroMedico from './pages/CadastroMedico';
 import RecuperarSenha from './pages/RecuperarSenha';
 import PainelMedico from './pages/PainelMedico';
 import HospitalInterna from './pages/HospitalInterna';
-import FormularioPredicao from './pages/FormularioPredicao'; // <--- Importe a tela
+import FormularioPredicao from './pages/FormularioPredicao';
+import ResultadoPredicao from './pages/ResultadoPredicao';
+import PerfilPaciente from './pages/PerfilPaciente'; // <--- Importe a tela aqui
 
 function App() {
   return (
@@ -17,12 +19,11 @@ function App() {
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
         <Route path="/painel-medico" element={<PainelMedico />} />
         <Route path="/hospital-interna" element={<HospitalInterna />} />
+        <Route path="/formulario-predicao" element={<FormularioPredicao />} />
+        <Route path="/resultado-predicao" element={<ResultadoPredicao />} />
         
-        {/* Nova Rota: Formulário */}
-        <Route path="/formulario-predicao" element={<FormularioPredicao />} /> 
-        
-        {/* Placeholder para a próxima tela que faremos */}
-        <Route path="/resultado-predicao" element={<div className="p-10 text-2xl font-bold">Aqui vai ser o laudo gerado! (Tela da Previsão)</div>} />
+        {/* Nova Rota: Perfil do Paciente */}
+        <Route path="/perfil-paciente" element={<PerfilPaciente />} /> 
       </Routes>
     </BrowserRouter>
   );
