@@ -91,7 +91,7 @@ export default function HospitalInterna() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         
         <div className="mb-6">
-          <button className="bg-[#6eb1be] text-white px-6 py-2 rounded-full font-bold text-sm">
+          <button  onClick={() => navigate('/historico-predicoes')} className="bg-[#6eb1be] hover:bg-[#6eb1be]/90 text-white px-6 py-2 rounded-full font-bold text-sm">
             Pacientes
           </button>
         </div>
