@@ -35,3 +35,11 @@ def get_meus_hospitais():
         return jsonify(lista), 200
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+@dashboard_bp.route('/api/dashboard/hospital/<int:hospital_id>', methods=['GET'])
+@jwt_required()
+def get_stats_hospital_local(hospital_id):
+    try:
+        stats = service.obter_estatisticas_hospital_simples(hospital_id)
+        return jsonify(stats), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500

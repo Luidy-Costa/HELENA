@@ -1,149 +1,165 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Activity, Clock, AlertTriangle, Search, Plus, FileText, Calendar, ArrowLeft, Building2 } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
+import api from '../services/api';
 
 export default function HospitalInterna() {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const hospital = location.state?.hospital;
 
-  // Mock do nome do hospital atual (futuramente vira do Banco de Dados)
-  const hospitalAtual = "Hospital São Lucas";
+  const [pacientes, setPacientes] = useState([]);
+  
+  // NOVO: Estado para os cards estatísticos deste hospital
+  const [statsHospital, setStatsHospital] = useState({
+    avaliacoes_mes: 0,
+    pacientes_risco: 0
+  });
 
-  // Dados falsos (Mock) dos pacientes
-  const pacientes = [
-    {
-      id: 'PRN-2026-001',
-      nome: 'Ana Maria Santos da Silva',
-      ultimaAtualizacao: '12/02/2026',
-      dataNascimento: '10/04/1976'
-    },
-    {
-      id: 'PRN-2026-002',
-      nome: 'Henrique Gonçalves Ramos',
-      ultimaAtualizacao: '12/02/2026',
-      dataNascimento: '10/04/1976'
+  useEffect(() => {
+    if (!hospital) {
+      navigate('/painel-medico');
+      return;
     }
-  ];
+
+    const buscarPacientes = async () => {
+      try {
+        const response = await api.get(`/hospitais/${hospital.id}/pacientes`);
+        setPacientes(response.data);
+      } catch (error) {
+        console.error("Erro ao carregar pacientes:", error);
+      }
+    };
+
+    // NOVA FUNÇÃO: Busca as estatísticas do hospital no backend
+    const buscarEstatisticas = async () => {
+      try {
+        const response = await api.get(`/dashboard/hospital/${hospital.id}`);
+        setStatsHospital(response.data);
+      } catch (error) {
+        console.error("Erro ao carregar estatísticas do hospital:", error);
+      }
+    };
+
+    buscarPacientes();
+    buscarEstatisticas(); // Chama a busca ao abrir a tela
+  }, [hospital, navigate]);
+
+  if (!hospital) return null; 
 
   return (
     <DashboardLayout>
       
-      {/* Botão de Voltar */}
       <button 
         onClick={() => navigate('/painel-medico')}
         className="flex items-center gap-2 text-[#6eb1be] hover:text-[#0b2b3f] transition-colors font-bold text-sm mb-6"
       >
-        <ArrowLeft size={16} /> Voltar para Hospitais
+        <ArrowLeft size={18} /> Voltar para o painel
       </button>
 
-      {/* Título da Página e INDICADOR DO HOSPITAL */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-[#0b2b3f] mb-1">Painel Administrativo Hospitalar</h2>
-          <p className="text-[#6eb1be] text-lg font-medium">Visão geral do sistema Lung Cancer Prediction</p>
-        </div>
-        
-        {/* NOVO: Indicador Visual do Hospital */}
-        <div className="bg-[#0b2b3f] text-white px-6 py-3 rounded-xl shadow-md flex items-center gap-4 border-l-4 border-[#6eb1be]">
-          <Building2 size={24} className="text-[#6eb1be]" />
-          <div>
-            <p className="text-xs text-[#6eb1be] font-bold uppercase tracking-wider">Hospital Atual</p>
-            <p className="text-lg font-bold">{hospitalAtual}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Grid de Cards Estatísticos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
-          <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
-            <Activity size={32} />
+      <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="bg-[#f4f9fb] p-4 rounded-xl text-[#0b2b3f]">
+            <Building2 size={40} />
           </div>
           <div>
-            <p className="text-[#6eb1be] font-bold text-sm">Total de Pacientes</p>
-            <h3 className="text-3xl font-bold text-[#0b2b3f]">120</h3>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
-          <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
-            <Clock size={32} />
-          </div>
-          <div>
-            <p className="text-[#6eb1be] font-bold text-sm">Avaliações Este Mês</p>
-            <h3 className="text-3xl font-bold text-[#0b2b3f]">50</h3>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-red-100 flex items-center gap-6">
-          <div className="bg-red-50 p-4 rounded-full text-red-500">
-            <AlertTriangle size={32} />
-          </div>
-          <div>
-            <p className="text-gray-500 font-bold text-sm">Pacientes Alto Risco</p>
-            <h3 className="text-3xl font-bold text-red-500">12</h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Área Principal Branca */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        
-        <div className="mb-6">
-          <button  onClick={() => navigate('/historico-predicoes')} className="bg-[#6eb1be] hover:bg-[#6eb1be]/90 text-white px-6 py-2 rounded-full font-bold text-sm">
-            Pacientes
-          </button>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+            <h2 className="text-3xl font-bold text-[#0b2b3f] mb-2">{hospital.nome}</h2>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold border border-green-200">
+                {hospital.status}
+              </span>
+              <span className="text-gray-500 font-medium text-sm pt-1">ID do Hospital: {hospital.id}</span>
             </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => navigate('/formulario-predicao', { state: { hospital } })}
+          className="w-full md:w-auto flex items-center justify-center gap-2 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white px-6 py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-[#6eb1be]/30"
+        >
+          <Plus size={20} /> Fazer nova avaliação
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="bg-blue-50 p-3 rounded-lg text-blue-600"><Activity size={24} /></div>
+          <div>
+            <p className="text-gray-500 font-bold text-xs uppercase">Pacientes Registrados</p>
+            <h4 className="text-2xl font-bold text-[#0b2b3f]">{pacientes.length}</h4>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="bg-green-50 p-3 rounded-lg text-green-600"><Clock size={24} /></div>
+          <div>
+            <p className="text-gray-500 font-bold text-xs uppercase">Avaliações no Mês</p>
+            {/* VALOR REAL AQUI */}
+            <h4 className="text-2xl font-bold text-[#0b2b3f]">{statsHospital.avaliacoes_mes}</h4> 
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="bg-red-50 p-3 rounded-lg text-red-600"><AlertTriangle size={24} /></div>
+          <div>
+            <p className="text-gray-500 font-bold text-xs uppercase">Pacientes de Alto Risco</p>
+             {/* VALOR REAL AQUI */}
+            <h4 className="text-2xl font-bold text-[#0b2b3f]">{statsHospital.pacientes_risco}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-[#0b2b3f]">Pacientes e Histórico</h3>
+            <p className="text-gray-500 font-medium text-sm">Gerencie os pacientes deste hospital</p>
+          </div>
+          <div className="relative w-full md:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-full bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f]"
-              placeholder="Buscar por nome do paciente ou Id do paciente..."
+              className="w-full md:w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-sm text-[#0b2b3f]"
+              placeholder="Buscar paciente pelo nome ou ID..."
             />
           </div>
-          <button 
-            onClick={() => navigate('/formulario-predicao')} 
-            className="flex items-center justify-center gap-2 bg-[#0b2b3f] hover:bg-[#0b2b3f]/90 text-white px-8 py-3 rounded-full font-bold transition-colors shadow-lg"
-          >
-            <Plus size={20} /> Novo predições
-          </button>
         </div>
 
         <div className="space-y-4">
-          {pacientes.map((paciente, index) => (
-            <div key={index} className="flex flex-col md:flex-row items-center justify-between p-5 border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
-              
-              <div className="flex items-start gap-4 mb-4 md:mb-0">
-                <div className="bg-[#f4f9fb] p-3 rounded-xl text-[#0b2b3f] mt-1">
-                  <Activity size={24} />
-                </div>
-                <div>
-                  <h4 className="text-[#0b2b3f] text-lg font-bold mb-2">{paciente.nome}</h4>
-                  <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 font-medium">
-                    <span className="flex items-center gap-1.5"><FileText size={16} /> {paciente.id}</span>
-                    <span className="flex items-center gap-1.5"><Clock size={16} /> Última atualização: {paciente.ultimaAtualizacao}</span>
-                    <span className="flex items-center gap-1.5"><Calendar size={16} /> Data de nascimento: {paciente.dataNascimento}</span>
+          {pacientes.length > 0 ? (
+            pacientes.map((paciente) => (
+              <div key={paciente.id} className="flex flex-col md:flex-row items-center justify-between p-5 border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
+                
+                <div className="flex items-start gap-4 mb-4 md:mb-0">
+                  <div className="bg-[#f4f9fb] p-3 rounded-xl text-[#0b2b3f] mt-1">
+                    <Activity size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-[#0b2b3f] text-lg font-bold mb-2">{paciente.nome}</h4>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 font-medium">
+                      <span className="flex items-center gap-1.5"><FileText size={16} /> ID: {paciente.id}</span>
+                      <span className="flex items-center gap-1.5"><Clock size={16} /> Última atualização: {new Date(paciente.ultimaAtualizacao).toLocaleDateString('pt-BR')}</span>
+                      <span className="flex items-center gap-1.5"><Calendar size={16} /> Data Nasc: {new Date(paciente.dataNascimento).toLocaleDateString('pt-BR')}</span>
+                    </div>
                   </div>
                 </div>
+
+                <button 
+                  onClick={() => navigate('/perfil-paciente', { state: { paciente } })}
+                  className="w-full md:w-auto px-6 py-2 border-2 border-[#0b2b3f] text-[#0b2b3f] font-bold rounded-lg hover:bg-[#0b2b3f] hover:text-white transition-colors"
+                >
+                  Ver Perfil e Histórico
+                </button>
               </div>
-
-              <button 
-                onClick={() => navigate('/perfil-paciente')}
-                className="w-full md:w-auto px-6 py-2 border-2 border-[#0b2b3f] text-[#0b2b3f] font-bold rounded-lg hover:bg-[#0b2b3f] hover:text-white transition-colors"
-              >
-                Ver Detalhes
-              </button>
+            ))
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-gray-500 font-medium">Nenhum paciente cadastrado para você neste hospital ainda.</p>
             </div>
-          ))}
+          )}
         </div>
-
       </div>
+
     </DashboardLayout>
   );
 }
