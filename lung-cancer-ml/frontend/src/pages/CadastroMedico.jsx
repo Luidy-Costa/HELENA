@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../layouts/AuthLayout';
+import api from '../services/api'
 
 export default function CadastroMedico() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CadastroMedico() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleCadastro = (e) => {
+  const handleCadastro = async (e) => {
     e.preventDefault();
     
     if (formData.senha !== formData.confirmarSenha) {
@@ -29,12 +30,23 @@ export default function CadastroMedico() {
       return;
     }
 
-    console.log("Tentando cadastrar:", formData);
-    // Futuramente: Integração com o /api/medicos do Flask
-    
-    // Simula sucesso e volta pro login
-    alert("Cadastro realizado com sucesso!");
-    navigate('/login-medico');
+    try {
+      // Chamada real para a rota do Flask
+      const response = await api.post('/medicos', {
+        nome: formData.nome,
+        crm: formData.crm,
+        email: formData.email,
+        senha: formData.senha
+      });
+      
+      console.log("Sucesso! ID:", response.data.id);
+      alert("Cadastro realizado com sucesso!");
+      navigate('/login-medico');
+
+    } catch (error) {
+      console.error('Erro no cadastro:', error.response?.data?.erro || error.message);
+      alert(error.response?.data?.erro || "Erro ao cadastrar o médico.");
+    }
   };
 
   return (

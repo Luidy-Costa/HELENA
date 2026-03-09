@@ -7,7 +7,7 @@ const api = axios.create({
 
 // Interceptor para injetar o Token em todas as requisições (deixaremos pronto para o futuro)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('@LCP:token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

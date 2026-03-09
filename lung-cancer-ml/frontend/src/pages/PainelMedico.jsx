@@ -1,16 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Activity, Clock, Search } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
+import api from '../services/api';
 
 export default function PainelMedico() {
   const navigate = useNavigate();
 
-  // Dados falsos (Mock) baseados no seu design para montarmos a tabela
-  const hospitais = [
-    { id: 1, nome: 'Hospital São Lucas', medicos: 5, pacientes: 120, status: 'ativo' },
-    { id: 2, nome: 'Instituto de Oncologia', medicos: 10, pacientes: 200, status: 'ativo' },
-  ];
+  // 1. Estado para guardar as estatísticas que virão do Postgres
+  const [estatisticas, setEstatisticas] = useState({
+    total_predicoes: 0,
+    pacientes_atendidos: 0,
+    casos_graves: 0
+  });
+
+  // 2. Estado para a lista real de hospitais vinculados ao médico
+  const [hospitais, setHospitais] = useState([]);
+
+  // 3. Busca os dados no Flask automaticamente assim que a tela abre
+  useEffect(() => {
+    const carregarEstatisticas = async () => {
+      try {
+        const response = await api.get('/dashboard/resumo');
+        setEstatisticas(response.data); // Salva os dados do banco no estado
+      } catch (error) {
+        console.error("Erro ao buscar resumo:", error);
+        // Se der erro 401 (Não Autorizado), o Token expirou ou sumiu. Mandamos pro login.
+        if (error.response?.status === 401) {
+          localStorage.removeItem('@LCP:token');
+          navigate('/login-medico');
+        }
+      }
+    };
+
+    // NOVA FUNÇÃO: Busca os hospitais vinculados
+    const carregarHospitais = async () => {
+      try {
+        const response = await api.get('/dashboard/meus-hospitais');
+        setHospitais(response.data);
+      } catch (error) {
+        console.error("Erro ao carregar hospitais:", error);
+      }
+    };
+
+    carregarEstatisticas();
+    carregarHospitais(); // Chama a nova função ao carregar a tela
+  }, [navigate]);
 
   return (
     <DashboardLayout>
@@ -24,36 +59,36 @@ export default function PainelMedico() {
       {/* Grid de Cards Estatísticos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         
-        {/* Card 1 */}
+        {/* Card 1: Hospitais */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
             <Building2 size={32} />
           </div>
           <div>
             <p className="text-[#6eb1be] font-bold text-sm">Total de Hospitais</p>
-            <h3 className="text-3xl font-bold text-[#0b2b3f]">4</h3>
+            <h3 className="text-3xl font-bold text-[#0b2b3f]">{hospitais.length}</h3>
           </div>
         </div>
 
-        {/* Card 2 */}
+        {/* Card 2: Pacientes Atendidos */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
             <Activity size={32} />
           </div>
           <div>
             <p className="text-[#6eb1be] font-bold text-sm">Total de Pacientes</p>
-            <h3 className="text-3xl font-bold text-[#0b2b3f]">400</h3>
+            <h3 className="text-3xl font-bold text-[#0b2b3f]">{estatisticas.pacientes_atendidos}</h3>
           </div>
         </div>
 
-        {/* Card 3 */}
+        {/* Card 3: Predições Feitas */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
             <Clock size={32} />
           </div>
           <div>
-            <p className="text-[#6eb1be] font-bold text-sm">Avaliações Este Mês</p>
-            <h3 className="text-3xl font-bold text-[#0b2b3f]">150</h3>
+            <p className="text-[#6eb1be] font-bold text-sm">Avaliações Feitas</p>
+            <h3 className="text-3xl font-bold text-[#0b2b3f]">{estatisticas.total_predicoes}</h3>
           </div>
         </div>
       </div>
@@ -90,33 +125,41 @@ export default function PainelMedico() {
               </tr>
             </thead>
             <tbody>
-              {hospitais.map((hospital) => (
-                <tr key={hospital.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-[#f4f9fb] p-2 rounded-lg text-[#0b2b3f]">
-                        <Building2 size={20} />
+              {hospitais.length > 0 ? (
+                hospitais.map((hospital) => (
+                  <tr key={hospital.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-[#f4f9fb] p-2 rounded-lg text-[#0b2b3f]">
+                          <Building2 size={20} />
+                        </div>
+                        <span className="font-bold text-[#0b2b3f]">{hospital.nome}</span>
                       </div>
-                      <span className="font-bold text-[#0b2b3f]">{hospital.nome}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 text-gray-600 font-medium">{hospital.medicos}</td>
-                  <td className="py-4 text-gray-600 font-medium">{hospital.pacientes}</td>
-                  <td className="py-4">
-                    <span className="px-3 py-1 bg-green-100 text-green-700 font-semibold text-sm rounded-full border border-green-200">
-                      {hospital.status}
-                    </span>
-                  </td>
-                  <td className="py-4 text-right">
-                    <button 
-                      onClick={() => navigate('/hospital-interna')} // Rota futura para entrar no hospital
-                      className="px-4 py-2 border-2 border-[#6eb1be] text-[#0b2b3f] font-bold text-sm rounded-lg hover:bg-[#6eb1be] hover:text-white transition-colors"
-                    >
-                      Ver Detalhes
-                    </button>
+                    </td>
+                    <td className="py-4 text-gray-600 font-medium">{hospital.medicos}</td>
+                    <td className="py-4 text-gray-600 font-medium">{hospital.pacientes}</td>
+                    <td className="py-4">
+                      <span className="px-3 py-1 bg-green-100 text-green-700 font-semibold text-sm rounded-full border border-green-200">
+                        {hospital.status}
+                      </span>
+                    </td>
+                    <td className="py-4 text-right">
+                      <button 
+                        onClick={() => navigate('/hospital-interna', { state: { hospital } })} 
+                        className="px-4 py-2 border-2 border-[#6eb1be] text-[#0b2b3f] font-bold text-sm rounded-lg hover:bg-[#6eb1be] hover:text-white transition-colors"
+                      >
+                        Ver Detalhes
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-gray-500 font-medium">
+                    Nenhum hospital vinculado ainda.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -39,6 +39,40 @@ class DashboardService:
             cursor.close()
             conn.close()
 
+    def obter_hospitais_do_medico(self, medico_id):
+        conn = obter_conexao()
+        cursor = conn.cursor()
+        try:
+            # Busca os hospitais onde o médico tem vínculo 'Ativo'
+            # E já conta quantos médicos e pacientes aquele hospital tem
+            query = """
+                SELECT 
+                    h.id, 
+                    h.nome_fantasia,
+                    (SELECT COUNT(*) FROM vinculos v2 WHERE v2.hospital_id = h.id AND v2.status = 'Ativo') as total_medicos,
+                    (SELECT COUNT(*) FROM pacientes p WHERE p.hospital_id = h.id) as total_pacientes,
+                    v.status
+                FROM hospitais h
+                JOIN vinculos v ON h.id = v.hospital_id
+                WHERE v.medico_id = %s AND v.status = 'Ativo';
+            """
+            cursor.execute(query, (medico_id,))
+            resultados = cursor.fetchall()
+            
+            lista = []
+            for r in resultados:
+                lista.append({
+                    "id": r[0],
+                    "nome": r[1],
+                    "medicos": r[2],
+                    "pacientes": r[3],
+                    "status": r[4]
+                })
+            return lista
+        finally:
+            cursor.close()
+            conn.close()
+
     # --- DASHBOARD HOSPITAL ---
     def obter_estatisticas_hospital(self, hospital_id):
         conn = obter_conexao()
