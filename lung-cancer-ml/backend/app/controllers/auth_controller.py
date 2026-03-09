@@ -71,12 +71,16 @@ def cadastrar_medico():
 @auth_bp.route('/api/login/medico', methods=['POST'])
 def login_medico():
     dados = request.json
-    resultado = service.login_medico(dados.get('crm'), dados.get('senha'))
-    
-    if resultado:
-        return jsonify(resultado), 200
-    return jsonify({"erro": "CRM ou senha incorretos"}), 401
-
+    try:
+        resultado = service.login_medico(dados.get('crm'), dados.get('senha'))
+        
+        if resultado:
+            return jsonify(resultado), 200
+        return jsonify({"erro": "CRM ou senha incorretos"}), 401
+    except Exception as e:
+        # Agora o erro real vai aparecer no terminal e na tela do React!
+        print(f"🔥 ERRO CRÍTICO NO LOGIN: {str(e)}") 
+        return jsonify({"erro": f"Falha interna do Flask: {str(e)}"}), 500
 # --- ROTAS DE ADMIN (LOGIN) ---
 @auth_bp.route('/api/login/admin', methods=['POST'])
 def login_admin():

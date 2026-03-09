@@ -20,3 +20,18 @@ def get_resumo():
             return jsonify({"erro": str(e)}), 500
             
     return jsonify({"erro": "Acesso não implementado para este perfil"}), 403
+
+@dashboard_bp.route('/api/dashboard/meus-hospitais', methods=['GET'])
+@jwt_required()
+def get_meus_hospitais():
+    claims = get_jwt()
+    usuario_id = get_jwt_identity()
+    
+    if claims.get('tipo') != 'medico':
+        return jsonify({"erro": "Apenas médicos podem ver seus hospitais"}), 403
+        
+    try:
+        lista = service.obter_hospitais_do_medico(usuario_id)
+        return jsonify(lista), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500

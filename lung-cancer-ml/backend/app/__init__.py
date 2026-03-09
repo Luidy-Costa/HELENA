@@ -1,10 +1,14 @@
 from flask import Flask
+from flask_cors import CORS  
 from flask_jwt_extended import JWTManager
-from app.services.email_service import mail # <--- IMPORTANTE: Importar o carteiro
+from app.services.email_service import mail
 import datetime
 
 def create_app():
     app = Flask(__name__)
+
+    # 2. ADICIONE ESTA LINHA PARA LIBERAR O REACT (VITE GERALMENTE RODA NA PORTA 5173)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # --- 1. CONFIGURAÇÕES DE SEGURANÇA ---
     app.config['JWT_SECRET_KEY'] = 'Carimbo_super_secreto_do_Luidy'

@@ -1,31 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Save, Camera, User, Mail, FileBadge, Calendar } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
+import api from '../services/api';
 
-export default function PerfilMedico() {
+export default function PainelMedico() {
   const navigate = useNavigate();
 
-  // Controle de edição
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Dados do médico (Mock)
-  const [medico, setMedico] = useState({
-    nome: 'Dr. João Silva',
-    crm: '123456-SP',
-    email: 'joao.silva@exemplo.com',
-    dataCadastro: '15/08/2025', // Data de cadastro não pode ser modificada
-    fotoUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=150&h=150'
+  // Novo estado para as estatísticas reais
+  const [estatisticas, setEstatisticas] = useState({
+    total_predicoes: 0,
+    pacientes_atendidos: 0,
+    casos_graves: 0 // No backend de dashboard_service.py retorna como 'casos_graves' ou 'pacientes_risco' dependendo do nome que você colocou. Pelo seu código, parece ser "casos_graves".
   });
 
-  const handleEditToggle = () => {
-    if (isEditing) {
-      console.log("Salvando dados do médico:", medico);
-      // Futuramente: Chamada API para atualizar perfil (PUT /api/perfil)
-      alert("Perfil atualizado com sucesso!");
-    }
-    setIsEditing(!isEditing);
-  };
+  // Dispara ao carregar a página
+  useEffect(() => {
+    const carregarDashboard = async () => {
+      try {
+        const response = await api.get('/dashboard/resumo');
+        setEstatisticas(response.data);
+      } catch (error) {
+        console.error("Erro ao carregar dashboard:", error);
+      }
+    };
+    carregarDashboard();
+  }, []);
 
   return (
     <DashboardLayout>

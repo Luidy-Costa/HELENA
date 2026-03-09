@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import AuthLayout from "../layouts/AuthLayout";
+import api from '../services/api'; // <--- O SALVADOR DA PÁTRIA AQUI
 
 export default function LoginMedico() {
   const navigate = useNavigate();
@@ -9,12 +10,38 @@ export default function LoginMedico() {
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  const handleLogin = (e) => {
+const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Tentando logar:", { crm, senha });
-    // Futuramente: Integração com o /api/login/medico do Flask
-
-    navigate('/painel-medico');
+    
+    try {
+      // Aqui sim faz sentido, pois crm e senha vêm do formulário desta tela!
+      const response = await api.post('/login/medico', { 
+        crm, 
+        senha 
+      });
+      
+      const token = response.data.token;
+      
+      if (token) {
+        localStorage.setItem('@LCP:token', token);
+        console.log("Login bem-sucedido. Bem-vindo,", response.data.nome);
+        navigate('/painel-medico');
+      }
+    } catch (error) {
+      if (error.response) {
+        // O Flask respondeu, mas com algum erro (401, 404, 500)
+        if (error.response.status === 401) {
+          alert("CRM ou senha incorretos.");
+        } else {
+          alert(`Erro do Flask (Status ${error.response.status}): ` + (error.response.data?.erro || "Verifique o terminal do Python"));
+          console.error('Detalhes do backend:', error.response.data);
+        }
+      } else {
+        // O Flask nem conseguiu responder (Servidor caiu ou erro de rede)
+        console.error('Erro de rede:', error.message);
+        alert("O servidor Flask não respondeu. Ele está rodando na porta 5000?");
+      }
+    }
   };
 
   return (
@@ -22,7 +49,7 @@ export default function LoginMedico() {
       <div className="relative w-full">
         {/* Botão Voltar */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
           className="absolute -top-6 -left-4 flex items-center gap-2 px-4 py-2 bg-[#6eb1be] text-white rounded-lg hover:bg-[#5ca0ad] transition-colors font-medium text-sm"
         >
           <ArrowLeft size={16} /> Voltar

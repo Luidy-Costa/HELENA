@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../layouts/AuthLayout';
+import api from '../services/api';
 
 export default function RecuperarSenha() {
   const navigate = useNavigate();
@@ -17,30 +18,48 @@ export default function RecuperarSenha() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
   // --- Funções de Ação ---
-  const handleEnviarEmail = (e) => {
+// --- Funções de Ação (Agora usando o 'api' real) ---
+  const handleEnviarEmail = async (e) => {
     e.preventDefault();
-    console.log("Enviando código para:", email);
-    // Aqui chamaremos: POST /api/senha/recuperar
-    setPasso(2); // Avança pro passo 2
+    try {
+      // Aqui a mágica acontece: chamamos o Flask usando a API
+      await api.post('/senha/recuperar', { email });
+      setPasso(2); // Avança pro passo 2
+    } catch (error) {
+      console.error('Erro:', error.response?.data?.erro || error.message);
+      alert(error.response?.data?.erro || "Erro ao enviar e-mail");
+    }
   };
 
-  const handleVerificarCodigo = (e) => {
+  const handleVerificarCodigo = async (e) => {
     e.preventDefault();
-    console.log("Verificando código:", codigo);
-    // Aqui chamaremos: POST /api/senha/validar
-    setPasso(3); // Avança pro passo 3
+    try {
+      // Validando o código no banco
+      await api.post('/senha/validar', { email, codigo });
+      setPasso(3); // Avança pro passo 3
+    } catch (error) {
+      console.error('Erro:', error.response?.data?.erro || error.message);
+      alert("Código inválido ou expirado");
+    }
   };
 
-  const handleRedefinirSenha = (e) => {
+  const handleRedefinirSenha = async (e) => {
     e.preventDefault();
+    
     if (novaSenha !== confirmarSenha) {
       alert("As senhas não coincidem!");
       return;
     }
-    console.log("Redefinindo senha para o email:", email);
-    // Aqui chamaremos: POST /api/senha/redefinir
-    alert("Senha alterada com sucesso!");
-    navigate('/login-medico'); // Volta pro login
+    
+    try {
+      // Trocando a senha de fato
+      await api.post('/senha/redefinir', { email, codigo, nova_senha: novaSenha });
+      alert("Senha alterada com sucesso!");
+      navigate('/login-medico'); 
+    } catch (error) {
+      console.error('Erro:', error.response?.data?.erro || error.message);
+      alert("Erro ao redefinir a senha.");
+    }
   };
 
   return (
