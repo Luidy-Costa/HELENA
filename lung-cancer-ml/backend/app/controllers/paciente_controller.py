@@ -36,3 +36,34 @@ def editar_paciente(paciente_id):
             return jsonify({"erro": "Paciente não encontrado."}), 404
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+    
+@paciente_bp.route('/api/hospitais/<int:hospital_id>/pacientes', methods=['GET'])
+@jwt_required()
+def listar_pacientes_do_hospital(hospital_id):
+    claims = get_jwt()
+    medico_id = get_jwt_identity()
+    
+    if claims.get('tipo') != 'medico':
+        return jsonify({"erro": "Acesso negado"}), 403
+        
+    try:
+        # Verifica se o médico tem vínculo com este hospital
+        if not service.usuario_model.verificar_vinculo(medico_id, hospital_id):
+            return jsonify({"erro": "Você não tem permissão para acessar este hospital"}), 403
+            
+        # Busca os pacientes no banco
+        pacientes_brutos = service.model.listar_por_hospital(hospital_id)
+        
+        lista = []
+        for p in pacientes_brutos:
+            # O retorno do banco é a tupla: (id, nome_completo, data_nascimento, data_cadastro)
+            lista.append({
+                "id": p[0],
+                "nome": p[1],
+                "dataNascimento": str(p[2]),
+                "ultimaAtualizacao": str(p[3]) # No futuro pode ser a data da última predição
+            })
+            
+        return jsonify(lista), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
