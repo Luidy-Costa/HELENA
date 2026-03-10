@@ -1,4 +1,5 @@
 import React from "react";
+import logoImg from '../assets/logo.png';
 
 export default function AuthLayout({ children }) {
   return (
@@ -7,24 +8,11 @@ export default function AuthLayout({ children }) {
       <div className="hidden lg:flex w-1/2 bg-[#6eb1be] flex-col justify-between p-12 relative overflow-hidden">
         {/* Logo LCP */}
         <div className="flex flex-col items-center mt-8">
-          <svg
-            width="120"
-            height="120"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 2v6" />
-            <path d="M12 8c-2 0-4-1-4-1S5 5 4 6c-1.5 1.5-1 4.5 0 7 1 2.5 3.5 5 5 5 1.5 0 3-1 3-1" />
-            <path d="M12 8c2 0 4-1 4-1s3-2 4-1c1.5 1.5 1 4.5 0 7-1 2.5-3.5 5-5 5-1.5 0-3-1-3-1" />
-            <path d="M12 11c-1.5 1-3 1-3 1" />
-            <path d="M12 11c1.5 1 3 1 3 1" />
-            <path d="M9 16v-2" />
-            <path d="M15 16v-2" />
-          </svg>
+          <img 
+                      src={logoImg} 
+                      alt="LCP Logo" 
+                      className="w-23 h-20 object-contain rounded-md" 
+                    />
           <h1 className="text-white text-5xl font-bold mt-2 tracking-wider">
             LCP
           </h1>

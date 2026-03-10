@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Activity, Clock, Search } from 'lucide-react';
-import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api';
 
 export default function PainelMedico() {
   const navigate = useNavigate();

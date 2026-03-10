@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Save, X, ArrowLeft } from 'lucide-react';
-import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api';
 
 export default function FormularioPredicao() {
   const navigate = useNavigate();

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Activity, FileText, Calendar, ArrowLeft } from 'lucide-react';
-import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api';
 
 export default function HistoricoPredicoes() {
   const navigate = useNavigate();

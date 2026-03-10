@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import AuthLayout from '../layouts/AuthLayout';
-import api from '../services/api'
+import AuthLayout from '../../layouts/AuthLayout';
+import api from '../../services/api'
 
 export default function CadastroMedico() {
   const navigate = useNavigate();

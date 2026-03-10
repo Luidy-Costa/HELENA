@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
-import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api'; // MENSAGEIRO
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api'; // MENSAGEIRO
 
 export default function ResultadoPredicao() {
   const navigate = useNavigate();

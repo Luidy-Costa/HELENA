@@ -1,52 +1,26 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
-import AuthLayout from "../layouts/AuthLayout";
-import api from '../services/api'; // <--- O SALVADOR DA PÁTRIA AQUI
+import { Eye, EyeOff, ArrowLeft, Building2 } from "lucide-react";
+import AuthLayout from "../../layouts/AuthLayout";
 
-export default function LoginMedico() {
+export default function LoginHospital() {
   const navigate = useNavigate();
-  const [crm, setCrm] = useState("");
+  const [cnpj, setCnpj] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
+    console.log("Simulando login hospitalar:", { cnpj });
     
-    try {
-      // Aqui sim faz sentido, pois crm e senha vêm do formulário desta tela!
-      const response = await api.post('/login/medico', { 
-        crm, 
-        senha 
-      });
-      
-      const token = response.data.token;
-      
-      if (token) {
-        localStorage.setItem('@LCP:token', token);
-        console.log("Login bem-sucedido. Bem-vindo,", response.data.nome);
-        navigate('/painel-medico');
-      }
-    } catch (error) {
-      if (error.response) {
-        // O Flask respondeu, mas com algum erro (401, 404, 500)
-        if (error.response.status === 401) {
-          alert("CRM ou senha incorretos.");
-        } else {
-          alert(`Erro do Flask (Status ${error.response.status}): ` + (error.response.data?.erro || "Verifique o terminal do Python"));
-          console.error('Detalhes do backend:', error.response.data);
-        }
-      } else {
-        // O Flask nem conseguiu responder (Servidor caiu ou erro de rede)
-        console.error('Erro de rede:', error.message);
-        alert("O servidor Flask não respondeu. Ele está rodando na porta 5000?");
-      }
-    }
+    // Simula sucesso e joga pro painel logado
+    navigate('/painel-hospital');
   };
 
   return (
     <AuthLayout>
       <div className="relative w-full">
+        
         {/* Botão Voltar */}
         <button
           onClick={() => navigate('/')}
@@ -55,28 +29,13 @@ const handleLogin = async (e) => {
           <ArrowLeft size={16} /> Voltar
         </button>
 
-        {/* Ícone e Títulos (Fiel ao Figma) */}
+        {/* Ícone e Títulos */}
         <div className="flex flex-col items-center mt-12 mb-8">
-          {/* Ícone imitando o design */}
-          <div className="mb-4">
-            <svg
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#0b2b3f"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+          <div className="mb-4 text-[#0b2b3f]">
+            <Building2 size={64} strokeWidth={1.5} />
           </div>
-          <h2 className="text-[32px] font-bold text-[#0b2b3f] mb-1">
-            Login do Médico
+          <h2 className="text-[32px] font-bold text-[#0b2b3f] mb-1 text-center">
+            Login do Administrador Hospitalar
           </h2>
           <p className="text-[#6eb1be] text-lg font-medium">
             Acesse sua conta para continuar
@@ -85,26 +44,22 @@ const handleLogin = async (e) => {
 
         {/* Formulário */}
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Campo CRM */}
+          {/* Campo CNPJ */}
           <div>
-            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
-              CRM
-            </label>
+            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">CNPJ</label>
             <input
               type="text"
               className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] focus:border-transparent outline-none text-[#0b2b3f] transition-all"
-              placeholder="Digite seu CRM..."
-              value={crm}
-              onChange={(e) => setCrm(e.target.value)}
+              placeholder="Digite seu e-mail ou CNPJ..."
+              value={cnpj}
+              onChange={(e) => setCnpj(e.target.value)}
               required
             />
           </div>
 
           {/* Campo Senha */}
           <div>
-            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
-              Senha
-            </label>
+            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">Senha</label>
             <div className="relative">
               <input
                 type={mostrarSenha ? "text" : "password"}
@@ -145,10 +100,7 @@ const handleLogin = async (e) => {
           {/* Link de Cadastro */}
           <p className="mt-8 text-center text-sm text-[#0b2b3f] font-medium pt-4">
             Não possui conta?{" "}
-            <Link
-              to="/cadastro-medico"
-              className="text-[#6eb1be] hover:underline font-bold ml-1"
-            >
+            <Link to="/cadastro-hospital" className="text-[#6eb1be] hover:underline font-bold ml-1">
               Cadastre-se
             </Link>
           </p>

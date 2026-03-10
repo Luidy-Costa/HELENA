@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Activity, Clock, AlertTriangle, Search, Plus, FileText, Calendar, ArrowLeft, Building2, Users } from 'lucide-react';
-import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api';
 
 export default function HospitalInterna() {
   const navigate = useNavigate();
