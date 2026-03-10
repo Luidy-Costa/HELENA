@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // <-- Adicione useLocation
 import { Save, X, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
+import api from '../services/api'; // <-- Adicione a nossa API
 
 export default function FormularioPredicao() {
   const navigate = useNavigate();
+  
+  // Captura o hospital que veio na "bagagem" da tela anterior
+  const location = useLocation();
+  const hospital = location.state?.hospital;
+
+  // ... (MANTENHA OS SEUS STATES AQUI: paciente, form, observacoes) ...
 
   // Estados dos Dados do Paciente
   const [paciente, setPaciente] = useState({
@@ -24,31 +31,65 @@ export default function FormularioPredicao() {
   const [observacoes, setObservacoes] = useState('');
 
   // Função para lidar com a submissão
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Validação dos Dados do Paciente
+    // 1. Validações Iniciais
+    if (!hospital) {
+      alert("Erro: Nenhum hospital selecionado. Volte e acesse o hospital novamente.");
+      return;
+    }
+
     if (!paciente.nome.trim() || !paciente.dataNascimento.trim()) {
       alert("⚠️ Atenção: O Nome e a Data de Nascimento do paciente são obrigatórios!");
-      return; // Para a execução aqui e não envia
+      return;
     }
 
-    // 2. Validação das Respostas da IA
-    // Pega o nosso objeto 'form' e procura se tem alguma chave com valor vazio ('')
-    const perguntasNaoRespondidas = Object.entries(form).filter(([chave, valor]) => valor === '');
+    // 2. Empacotando os dados EXATAMENTE como o ai_service.py e o PostgreSQL esperam
+    const payload = {
+      paciente: {
+        nome: paciente.nome,
+        data_nascimento: paciente.dataNascimento,
+        hospital_id: hospital.id
+      },
+      sintomas: {
+        Idade: parseInt(form.idade) || 0,
+        Genero: form.genero,
+        Fumo: form.fumo, // "fumante_ativo", "ex_fumante", "não_fumante"
+        Alcoolismo: form.alcoolismo === 'sim' ? 1 : 0,
+        Freq_Respiratoria: form.freqRespiratoria, // "normal", "anormal"
+        Freq_Cardiaca: form.freqCardiaca,
+        Pressao_Sistolica: form.pressaoSistolica,
+        Pressao_Diastolica: form.pressaoDiastolica,
+        Sat_Oxigenio: form.satOxigenio,
+        IMC: form.imc,
+        Falta_Ar: form.faltaAr === 'sim' ? 1 : 0,
+        Tosse: form.tosse === 'sim' ? 1 : 0,
+        Tosse_Sangue: form.tosseSangue === 'sim' ? 1 : 0,
+        Fadiga: form.fadiga === 'sim' ? 1 : 0,
+        Chiado: form.chiado === 'sim' ? 1 : 0
+      },
+      observacoes: observacoes
+    };
 
-    if (perguntasNaoRespondidas.length > 0) {
-      alert(`⚠️ Atenção: Faltam ${perguntasNaoRespondidas.length} pergunta(s) no formulário clínico. Por favor, responda todas as opções (Sim/Não, Normal/Anormal, etc).`);
-      return; // Para a execução aqui e não envia
+    try {
+      // 3. Envia para a Inteligência Artificial e para o Banco de Dados
+      const response = await api.post('/predicoes', payload);
+      
+      // 4. Se deu certo, navega para a tela de Resultado levando todos os dados na bagagem!
+      navigate('/resultado-predicao', { 
+        state: { 
+          id_predicao: response.data.data, // O ID que o banco gerou
+          pacienteInfo: paciente,
+          hospitalInfo: hospital,
+          respostasForm: form
+        } 
+      });
+
+    } catch (error) {
+      console.error("Erro na IA/Servidor:", error);
+      alert(error.response?.data?.erro || "Erro ao processar a predição pela Inteligência Artificial.");
     }
-
-    // Se o código chegou até aqui, significa que passou em todas as validações! ✅
-    console.log("Dados do Paciente:", paciente);
-    console.log("Respostas Clínicas:", form);
-    console.log("Observações:", observacoes);
-    
-    // Simula o carregamento e vai para o Resultado
-    navigate('/resultado-predicao');
   };
 
   // Mini-componente para os botões arredondados (Pills)
