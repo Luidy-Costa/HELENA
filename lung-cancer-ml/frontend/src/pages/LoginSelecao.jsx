@@ -9,11 +9,11 @@ export default function LoginSelecao() {
 
   const handleEntrar = () => {
     if (tipoSelecionado === "medico") {
-      navigate("/login-medico"); // Vai para a tela de login do médico
+      navigate("/login-medico"); 
     } else if (tipoSelecionado === "hospital") {
-      console.log("Navegar para admin hospitalar");
+      navigate("/login-hospital"); 
     } else if (tipoSelecionado === "admin") {
-      console.log("Navegar para admin geral");
+      console.log("Navegar para admin geral"); 
     }
   };
 

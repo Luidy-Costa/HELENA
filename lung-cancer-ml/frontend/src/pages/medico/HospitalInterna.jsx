@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Activity, Clock, AlertTriangle, Search, Plus, FileText, Calendar, ArrowLeft, Building2 } from 'lucide-react';
-import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api';
+import { Activity, Clock, AlertTriangle, Search, Plus, FileText, Calendar, ArrowLeft, Building2, Users } from 'lucide-react';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api';
 
 export default function HospitalInterna() {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function HospitalInterna() {
 
   const [pacientes, setPacientes] = useState([]);
   
-  // NOVO: Estado para os cards estatísticos deste hospital
+  // Estado para os cards estatísticos deste hospital
   const [statsHospital, setStatsHospital] = useState({
     avaliacoes_mes: 0,
     pacientes_risco: 0
@@ -33,7 +33,6 @@ export default function HospitalInterna() {
       }
     };
 
-    // NOVA FUNÇÃO: Busca as estatísticas do hospital no backend
     const buscarEstatisticas = async () => {
       try {
         const response = await api.get(`/dashboard/hospital/${hospital.id}`);
@@ -44,8 +43,13 @@ export default function HospitalInterna() {
     };
 
     buscarPacientes();
-    buscarEstatisticas(); // Chama a busca ao abrir a tela
+    buscarEstatisticas();
   }, [hospital, navigate]);
+
+  // LÓGICA DE FILTRO: Ordena os pacientes do mais recente para o mais antigo e corta os 3 primeiros
+  const pacientesRecentes = [...pacientes]
+    .sort((a, b) => new Date(b.ultimaAtualizacao || 0) - new Date(a.ultimaAtualizacao || 0))
+    .slice(0, 3);
 
   if (!hospital) return null; 
 
@@ -59,6 +63,7 @@ export default function HospitalInterna() {
         <ArrowLeft size={18} /> Voltar para o painel
       </button>
 
+      {/* CABEÇALHO DO HOSPITAL */}
       <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="bg-[#f4f9fb] p-4 rounded-xl text-[#0b2b3f]">
@@ -68,19 +73,29 @@ export default function HospitalInterna() {
             <h2 className="text-3xl font-bold text-[#0b2b3f] mb-2">{hospital.nome}</h2>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold border border-green-200">
-                {hospital.status}
+                {hospital.status || "Ativo"}
               </span>
               <span className="text-gray-500 font-medium text-sm pt-1">ID do Hospital: {hospital.id}</span>
             </div>
           </div>
         </div>
 
-        <button 
-          onClick={() => navigate('/formulario-predicao', { state: { hospital } })}
-          className="w-full md:w-auto flex items-center justify-center gap-2 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white px-6 py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-[#6eb1be]/30"
-        >
-          <Plus size={20} /> Fazer nova avaliação
-        </button>
+        {/* GRUPO DE BOTÕES */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <button 
+            onClick={() => navigate('/historico-predicoes', { state: { hospital } })}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-2 border-[#6eb1be] text-[#6eb1be] hover:bg-[#f4f9fb] px-6 py-3.5 rounded-xl font-bold transition-all"
+          >
+            <Users size={20} /> Pacientes
+          </button>
+
+          <button 
+            onClick={() => navigate('/formulario-predicao', { state: { hospital } })}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white px-6 py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-[#6eb1be]/30"
+          >
+            <Plus size={20} /> Fazer nova avaliação
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -95,7 +110,6 @@ export default function HospitalInterna() {
           <div className="bg-green-50 p-3 rounded-lg text-green-600"><Clock size={24} /></div>
           <div>
             <p className="text-gray-500 font-bold text-xs uppercase">Avaliações no Mês</p>
-            {/* VALOR REAL AQUI */}
             <h4 className="text-2xl font-bold text-[#0b2b3f]">{statsHospital.avaliacoes_mes}</h4> 
           </div>
         </div>
@@ -103,7 +117,6 @@ export default function HospitalInterna() {
           <div className="bg-red-50 p-3 rounded-lg text-red-600"><AlertTriangle size={24} /></div>
           <div>
             <p className="text-gray-500 font-bold text-xs uppercase">Pacientes de Alto Risco</p>
-             {/* VALOR REAL AQUI */}
             <h4 className="text-2xl font-bold text-[#0b2b3f]">{statsHospital.pacientes_risco}</h4>
           </div>
         </div>
@@ -112,22 +125,22 @@ export default function HospitalInterna() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
-            <h3 className="text-xl font-bold text-[#0b2b3f]">Pacientes e Histórico</h3>
-            <p className="text-gray-500 font-medium text-sm">Gerencie os pacientes deste hospital</p>
+            <h3 className="text-xl font-bold text-[#0b2b3f]">Pacientes Recentes</h3>
+            <p className="text-gray-500 font-medium text-sm">Últimos perfis atualizados neste hospital</p>
           </div>
-          <div className="relative w-full md:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              className="w-full md:w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-sm text-[#0b2b3f]"
-              placeholder="Buscar paciente pelo nome ou ID..."
-            />
-          </div>
+          
+          {/* Botão de atalho rápido para ver todos */}
+          <button 
+            onClick={() => navigate('/historico-predicoes', { state: { hospital } })}
+            className="text-[#6eb1be] font-bold text-sm hover:text-[#0b2b3f] transition-colors"
+          >
+            Ver todos os pacientes →
+          </button>
         </div>
 
         <div className="space-y-4">
-          {pacientes.length > 0 ? (
-            pacientes.map((paciente) => (
+          {pacientesRecentes.length > 0 ? (
+            pacientesRecentes.map((paciente) => (
               <div key={paciente.id} className="flex flex-col md:flex-row items-center justify-between p-5 border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
                 
                 <div className="flex items-start gap-4 mb-4 md:mb-0">
@@ -138,8 +151,14 @@ export default function HospitalInterna() {
                     <h4 className="text-[#0b2b3f] text-lg font-bold mb-2">{paciente.nome}</h4>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 font-medium">
                       <span className="flex items-center gap-1.5"><FileText size={16} /> ID: {paciente.id}</span>
-                      <span className="flex items-center gap-1.5"><Clock size={16} /> Última atualização: {new Date(paciente.ultimaAtualizacao).toLocaleDateString('pt-BR')}</span>
-                      <span className="flex items-center gap-1.5"><Calendar size={16} /> Data Nasc: {new Date(paciente.dataNascimento).toLocaleDateString('pt-BR')}</span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={16} /> 
+                        Última atualização: {paciente.ultimaAtualizacao ? new Date(paciente.ultimaAtualizacao).toLocaleDateString('pt-BR') : '--'}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Calendar size={16} /> 
+                        Data Nasc: {paciente.dataNascimento ? new Date(paciente.dataNascimento).toLocaleDateString('pt-BR') : '--'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -148,7 +167,7 @@ export default function HospitalInterna() {
                   onClick={() => navigate('/perfil-paciente', { state: { paciente } })}
                   className="w-full md:w-auto px-6 py-2 border-2 border-[#0b2b3f] text-[#0b2b3f] font-bold rounded-lg hover:bg-[#0b2b3f] hover:text-white transition-colors"
                 >
-                  Ver Perfil e Histórico
+                  Ver Perfil
                 </button>
               </div>
             ))

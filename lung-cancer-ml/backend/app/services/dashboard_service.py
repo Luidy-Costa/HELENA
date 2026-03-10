@@ -138,17 +138,28 @@ class DashboardService:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # Conta o total de avaliações feitas neste hospital
+            # 1. Conta o total de pacientes vinculados a este hospital
+            cursor.execute("SELECT COUNT(*) FROM pacientes WHERE hospital_id = %s;", (hospital_id,))
+            total_pacientes = cursor.fetchone()[0]
+
+            # 2. Conta o total de avaliações feitas neste hospital
             cursor.execute("SELECT COUNT(*) FROM predicao WHERE hospital_id = %s;", (hospital_id,))
             avaliacoes_mes = cursor.fetchone()[0]
 
-            # Conta quantas deram 'Alto Risco' neste hospital
+            # 3. Conta quantas deram 'Alto Risco' neste hospital
             cursor.execute("SELECT COUNT(*) FROM predicao WHERE hospital_id = %s AND diagnostico_final = 'Alto Risco';", (hospital_id,))
-            pacientes_risco = cursor.fetchone()[0]
+            alto_risco = cursor.fetchone()[0]
+            
+            # 4. Médicos Ativos (Opcional, pois o React já conta, mas enviamos por garantia)
+            cursor.execute("SELECT COUNT(*) FROM vinculos_hospital_medico WHERE hospital_id = %s AND status = 'Ativo';", (hospital_id,))
+            medicos_ativos = cursor.fetchone()[0]
 
+            # Envia o pacote JSON com os nomes EXATOS que o React do Hospital espera
             return {
+                "medicos_ativos": medicos_ativos,
+                "total_pacientes": total_pacientes,
                 "avaliacoes_mes": avaliacoes_mes,
-                "pacientes_risco": pacientes_risco
+                "alto_risco": alto_risco
             }
         finally:
             cursor.close()

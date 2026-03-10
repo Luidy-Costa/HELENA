@@ -57,6 +57,9 @@ def create_app():
     from app.controllers.senha_controller import senha_bp
     app.register_blueprint(senha_bp)
 
+    from app.controllers.hospital_controller import hospital_bp
+    app.register_blueprint(hospital_bp)
+
     @app.route('/api/health', methods=['GET'])
     def health_check():
         return {"status": "sucesso", "mensagem": "Servidor MVC rodando com E-mail!"}

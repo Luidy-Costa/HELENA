@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
-import AuthLayout from "../layouts/AuthLayout";
-import api from '../services/api'; // <--- O SALVADOR DA PÁTRIA AQUI
+import AuthLayout from "../../layouts/AuthLayout";
+import api from '../../services/api'; // <--- O SALVADOR DA PÁTRIA AQUI
 
 export default function LoginMedico() {
   const navigate = useNavigate();

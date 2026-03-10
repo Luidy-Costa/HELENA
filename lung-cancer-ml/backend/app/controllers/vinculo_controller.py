@@ -18,11 +18,14 @@ def enviar_convite():
 
     hospital_id = get_jwt_identity() if claims.get('tipo') == 'hospital' else request.json.get('hospital_id')
     
-    # Busca dados do médico pelo CRM enviado
-    medico_data = model.buscar_medico_por_crm(request.json.get('crm'))
+    # 1. Pega o E-MAIL que o React enviou
+    email_digitado = request.json.get('email')
+    
+    # 2. Busca dados do médico usando a nova função de e-mail!
+    medico_data = model.buscar_medico_por_email(email_digitado)
     
     if not medico_data:
-        return jsonify({"erro": "Médico não encontrado com este CRM"}), 404
+        return jsonify({"erro": "Nenhum médico encontrado com este e-mail no sistema."}), 404
     
     medico_id = medico_data[0]
     email_real_medico = medico_data[3]
