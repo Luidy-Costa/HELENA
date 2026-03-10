@@ -1,27 +1,36 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MailPlus } from 'lucide-react';
-import AuthLayout from '../../layouts/AuthLayout'; // Ajuste o caminho dos ../ de acordo com a sua pasta
+import { ArrowLeft, MailPlus } from 'lucide-react'; // Trocamos o ícone para a cartinha
+import AuthLayout from '../../layouts/AuthLayout';
+import api from '../../services/api';
 
 export default function ConvidarMedico() {
   const navigate = useNavigate();
+  // Estado corrigido para "email" em vez de "crm"
   const [email, setEmail] = useState('');
+  const [carregando, setCarregando] = useState(false);
 
-  const handleEnviarConvite = (e) => {
+  const handleEnviarConvite = async (e) => {
     e.preventDefault();
+    setCarregando(true);
     
-    console.log("Simulando envio de convite para:", email);
-    
-    // Simula o sucesso e volta para o painel
-    alert(`Convite enviado com sucesso para ${email}!`);
-    navigate('/painel-hospital');
+    try {
+      await api.post('/vinculos/convidar', { email: email });
+      
+      alert(`Convite enviado com sucesso para ${email}!`);
+      navigate('/painel-hospital');
+    } catch (error) {
+      console.error("Erro ao enviar convite:", error);
+      alert(error.response?.data?.erro || "Erro ao enviar convite. Verifique se este e-mail está cadastrado no sistema.");
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
     <AuthLayout>
       <div className="relative w-full flex flex-col items-center">
         
-        {/* Botão Voltar */}
         <button 
           onClick={() => navigate('/painel-hospital')}
           className="absolute -top-6 -left-4 flex items-center gap-2 px-4 py-2 bg-[#6eb1be] text-white rounded-lg hover:bg-[#5ca0ad] transition-colors font-medium text-sm"
@@ -29,7 +38,6 @@ export default function ConvidarMedico() {
           <ArrowLeft size={16} /> Voltar
         </button>
 
-        {/* Ícone e Títulos */}
         <div className="flex flex-col items-center mt-12 mb-8">
           <div className="mb-4 text-[#0b2b3f]">
             <MailPlus size={64} strokeWidth={1.5} />
@@ -42,7 +50,6 @@ export default function ConvidarMedico() {
           </p>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleEnviarConvite} className="w-full space-y-6">
           <div>
             <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
@@ -60,9 +67,10 @@ export default function ConvidarMedico() {
 
           <button 
             type="submit" 
-            className="w-full py-3.5 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30"
+            disabled={carregando}
+            className="w-full py-3.5 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30 disabled:opacity-50"
           >
-            Enviar Convite
+            {carregando ? "Enviando Convite..." : "Enviar Convite"}
           </button>
         </form>
 

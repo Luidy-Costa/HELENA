@@ -99,6 +99,20 @@ class UsuarioModel:
         finally:
             cursor.close()
             conn.close()
+    
+    def buscar_medico_por_email(self, email):
+        conn = obter_conexao()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT id, nome_completo, crm, email 
+                FROM medicos 
+                WHERE email = %s;
+            """, (email,))
+            return cursor.fetchone()
+        finally:
+            cursor.close()
+            conn.close()
 
     # [NOVO]
     # [CORRIGIDO]

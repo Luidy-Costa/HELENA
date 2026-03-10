@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../../layouts/AuthLayout';
+import api from '../../services/api'; // <-- API Importada
 
 export default function CadastroHospital() {
   const navigate = useNavigate();
@@ -16,12 +17,13 @@ export default function CadastroHospital() {
   
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleCadastro = (e) => {
+  const handleCadastro = async (e) => {
     e.preventDefault();
     
     if (formData.senha !== formData.confirmarSenha) {
@@ -29,15 +31,30 @@ export default function CadastroHospital() {
       return;
     }
 
-    console.log("Simulando cadastro hospital:", formData);
-    alert("Hospital cadastrado com sucesso! (Modo Simulação)");
-    navigate('/login-hospital');
+    setCarregando(true);
+    try {
+      // MÁGICA AQUI: Mandamos as duas etiquetas para o Python não ter como errar!
+      await api.post('/hospitais', {
+        nome_fantasia: formData.nome, // O Python provavelmente está procurando este
+        nome: formData.nome,          // E mandamos este também por segurança
+        cnpj: formData.cnpj,
+        email: formData.email,
+        senha: formData.senha
+      });
+      
+      alert("Hospital cadastrado com sucesso!");
+      navigate('/login-hospital');
+    } catch (error) {
+      console.error("Erro no cadastro:", error);
+      alert(error.response?.data?.erro || "Erro ao tentar cadastrar o hospital.");
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
     <AuthLayout>
       <div className="relative w-full">
-        
         <button 
           onClick={() => navigate('/')}
           className="absolute -top-6 -left-4 flex items-center gap-2 px-4 py-2 bg-[#6eb1be] text-white rounded-lg hover:bg-[#5ca0ad] transition-colors font-medium text-sm"
@@ -51,7 +68,6 @@ export default function CadastroHospital() {
         </div>
 
         <form onSubmit={handleCadastro} className="space-y-4">
-          
           <div>
             <label className="block text-[#0b2b3f] font-bold text-sm mb-1">Nome do Hospital</label>
             <input
@@ -139,8 +155,12 @@ export default function CadastroHospital() {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button type="submit" className="flex-1 py-3 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-full font-bold transition-colors">
-              Cadastrar Hospital
+            <button 
+              type="submit" 
+              disabled={carregando}
+              className="flex-1 py-3 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-full font-bold transition-colors disabled:opacity-50"
+            >
+              {carregando ? "Cadastrando..." : "Cadastrar Hospital"}
             </button>
             <button type="button" onClick={() => navigate('/')} className="flex-1 py-3 border-2 border-gray-200 text-gray-500 rounded-full font-bold hover:bg-gray-50 transition-colors">
               Cancelar

@@ -13,11 +13,15 @@ service = AuthService()
 def obter_meu_perfil():
     usuario_id = get_jwt_identity()
     claims = get_jwt()
-    tipo = claims.get('tipo') # 'medico', 'hospital' ou 'admin'
+    tipo = claims.get('tipo') 
     
     try:
         perfil = service.obter_perfil(usuario_id, tipo)
         if perfil:
+            
+            if tipo == 'hospital' and 'nome_fantasia' in perfil:
+                perfil['nome'] = perfil['nome_fantasia']
+                
             return jsonify(perfil), 200
         return jsonify({"erro": "Usuário não encontrado"}), 404
     except Exception as e:

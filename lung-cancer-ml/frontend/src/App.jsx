@@ -21,6 +21,10 @@ import CadastroHospital from './pages/hospital/CadastroHospital';
 import PainelHospital from './pages/hospital/PainelHospital';
 import PerfilHospital from './pages/hospital/PerfilHospital';
 import ConvidarMedico from './pages/hospital/ConvidarMedico';
+import PerfilMedicoHospital from './pages/hospital/PerfilMedicoHospital';
+import HistoricoPacientesHospital from './pages/hospital/HistoricoPacientesHospital';
+import PerfilPacienteHospital from './pages/hospital/PerfilPacienteHospital';
+import PrevisaoHospital from './pages/hospital/PrevisaoHospital';
 
 function App() {
   return (
@@ -47,6 +51,10 @@ function App() {
         <Route path="/painel-hospital" element={<PainelHospital />} />
         <Route path="/perfil-hospital" element={<PerfilHospital />} />
         <Route path="/convidar-medico" element={<ConvidarMedico />} />
+        <Route path="/perfil-medico-hospital" element={<PerfilMedicoHospital />} />
+        <Route path="/historico-pacientes-hospital" element={<HistoricoPacientesHospital />} />
+        <Route path="/perfil-paciente-hospital" element={<PerfilPacienteHospital />} />
+        <Route path="/previsao-hospital" element={<PrevisaoHospital />} />
       </Routes>
     </BrowserRouter>
   );
