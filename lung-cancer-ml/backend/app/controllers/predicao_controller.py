@@ -49,3 +49,18 @@ def baixar_pdf(predicao_id):
         )
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+    
+# [NOVA ROTA] Buscar os dados da predição para exibir na tela
+@predicao_bp.route('/api/predicoes/<int:predicao_id>', methods=['GET'])
+@jwt_required()
+def obter_predicao_json(predicao_id):
+    try:
+        # Usamos a mesma função incrível que você já tinha feito pro PDF!
+        dados_completos = model.buscar_por_id_completo(predicao_id) 
+        
+        if not dados_completos:
+            return jsonify({"erro": "Predição não encontrada"}), 404
+            
+        return jsonify(dados_completos), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
