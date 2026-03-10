@@ -71,11 +71,76 @@ class PredicaoModel:
                 "medico_nome": res[3],
                 "medico_crm": res[4],
                 "hospital_nome": res[5],
-                "probabilidade": res[6],
+                "probabilidade": float(res[6]) if res[6] is not None else 0.0, # <-- A MÁGICA AQUI (Força float)
                 "resultado": res[7],
                 "data": str(res[8]),
-                "sintomas": res[9] # Isso é um JSON
+                "sintomas": res[9]
             }
+        finally:
+            cursor.close()
+            conn.close()
+
+    def listar_historico_medico(self, medico_id):
+        conn = obter_conexao()
+        cursor = conn.cursor()
+        try:
+            # Busca todas as predições do médico, trazendo o nome do paciente e do hospital
+            query = """
+                SELECT pr.id, p.nome, p.id AS paciente_id, h.nome_fantasia, 
+                       pr.data, pr.probabilidade, pr.resultado
+                FROM predicao pr
+                JOIN pacientes p ON pr.paciente_id = p.id
+                JOIN hospitais h ON pr.hospital_id = h.id
+                WHERE pr.medico_id = %s
+                ORDER BY pr.data DESC;
+            """
+            cursor.execute(query, (medico_id,))
+            resultados = cursor.fetchall()
+            
+            historico = []
+            for r in resultados:
+                historico.append({
+                    "id_predicao": r[0],
+                    "paciente_nome": r[1],
+                    "paciente_id": r[2],
+                    "hospital_nome": r[3],
+                    "data": str(r[4]),
+                    "probabilidade": float(r[5]) if r[5] is not None else 0.0,
+                    "resultado": r[6]
+                })
+            return historico
+        finally:
+            cursor.close()
+            conn.close()
+
+    def listar_por_paciente(self, paciente_id):
+        conn = obter_conexao()
+        cursor = conn.cursor()
+        try:
+            # CORREÇÃO: Usando os nomes exatos das tabelas e colunas do schema.sql
+            query = """
+                SELECT pr.id, m.nome_completo as medico_nome, pr.data_predicao, h.nome_fantasia as hospital_nome,
+                       pr.probabilidade_risco, pr.diagnostico_final
+                FROM predicao pr
+                JOIN medicos m ON pr.medico_id = m.id
+                JOIN hospitais h ON pr.hospital_id = h.id
+                WHERE pr.paciente_id = %s
+                ORDER BY pr.data_predicao DESC;
+            """
+            cursor.execute(query, (paciente_id,))
+            resultados = cursor.fetchall()
+            
+            lista = []
+            for r in resultados:
+                lista.append({
+                    "id": r[0],
+                    "medico": r[1],
+                    "data": str(r[2]),
+                    "hospital": r[3],
+                    "porcentagem": f"{float(r[4])}%" if r[4] is not None else "0%",
+                    "risco": r[5]
+                })
+            return lista
         finally:
             cursor.close()
             conn.close()

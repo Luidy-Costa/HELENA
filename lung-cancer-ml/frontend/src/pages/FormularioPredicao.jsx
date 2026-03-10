@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom'; // <-- Adicione useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Save, X, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../layouts/DashboardLayout';
-import api from '../services/api'; // <-- Adicione a nossa API
+import api from '../services/api';
 
 export default function FormularioPredicao() {
   const navigate = useNavigate();
@@ -10,8 +10,6 @@ export default function FormularioPredicao() {
   // Captura o hospital que veio na "bagagem" da tela anterior
   const location = useLocation();
   const hospital = location.state?.hospital;
-
-  // ... (MANTENHA OS SEUS STATES AQUI: paciente, form, observacoes) ...
 
   // Estados dos Dados do Paciente
   const [paciente, setPaciente] = useState({
@@ -55,7 +53,7 @@ export default function FormularioPredicao() {
       sintomas: {
         Idade: parseInt(form.idade) || 0,
         Genero: form.genero,
-        Fumo: form.fumo, // "fumante_ativo", "ex_fumante", "não_fumante"
+        Fumo: form.fumo, // "fumante_ativo", "ex_fumante", "nao_fumante"
         Alcoolismo: form.alcoolismo === 'sim' ? 1 : 0,
         Freq_Respiratoria: form.freqRespiratoria, // "normal", "anormal"
         Freq_Cardiaca: form.freqCardiaca,
@@ -76,10 +74,13 @@ export default function FormularioPredicao() {
       // 3. Envia para a Inteligência Artificial e para o Banco de Dados
       const response = await api.post('/predicoes', payload);
       
-      // 4. Se deu certo, navega para a tela de Resultado levando todos os dados na bagagem!
+      // 4. Extraímos o número exato que o Python devolveu
+      const idExato = response.data.data.predicao_id;
+
+      // 5. Se deu certo, navega para a tela de Resultado levando apenas o ID puro
       navigate('/resultado-predicao', { 
         state: { 
-          id_predicao: response.data.data, // O ID que o banco gerou
+          id_predicao: idExato,
           pacienteInfo: paciente,
           hospitalInfo: hospital,
           respostasForm: form

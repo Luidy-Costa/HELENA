@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User } from 'lucide-react';
-import api from '../services/api'; // <-- Importamos nosso mensageiro
+import api from '../services/api';
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
@@ -12,37 +12,39 @@ export default function DashboardLayout({ children }) {
     foto: null 
   });
 
-  // 2. Busca quem é o dono do Token assim que o layout é montado
+  // 2. Busca os dados do usuário assim que o layout é montado
   useEffect(() => {
     const buscarDadosPerfil = async () => {
-      try {
-        const response = await api.get('/perfil');
-        // O backend retorna 'nome' para médico/admin e 'nome_fantasia' para hospital
-        setPerfil({
-          nome: response.data.nome || response.data.nome_fantasia || 'Usuário',
-          foto: response.data.foto
-        });
-      } catch (error) {
-        console.error("Erro ao carregar cabeçalho:", error);
-      }
-    };
+    try {
+      const response = await api.get('/perfil');
+      // Usando setPerfil corretamente!
+      setPerfil({
+        nome: response.data.nome || response.data.nome_completo || 'Médico(a)',
+        foto: response.data.foto || response.data.foto_perfil || null
+      });
+    } catch (error) {
+      console.error("Erro ao carregar cabeçalho:", error);
+      // Fallback seguro se o backend falhar
+      setPerfil({ nome: 'Usuário', foto: null });
+    }
+  };
 
     buscarDadosPerfil();
   }, []);
 
-  // 3. Função de Logout real
+  // 3. Função de Logout
   const handleLogout = () => {
-    localStorage.removeItem('@LCP:token'); // Destrói o crachá VIP
-    navigate('/login-medico'); // Expulsa para a tela de login
+    localStorage.removeItem('@LCP:token'); 
+    navigate('/login-medico'); 
   };
 
   return (
     <div className="min-h-screen bg-[#f4f9fb] font-sans flex flex-col">
       
-      {/* ================= HEADER (BARRA SUPERIOR) ================= */}
+      {/* ================= HEADER ================= */}
       <header className="bg-[#6eb1be] px-8 py-4 flex items-center justify-between shadow-md">
         
-        {/* Lado Esquerdo: Logo LCP */}
+        {/* Logo LCP */}
         <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/painel-medico')}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2v6" />
@@ -61,18 +63,18 @@ export default function DashboardLayout({ children }) {
         {/* Lado Direito: Perfil e Sair */}
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            {/* O NOME AGORA É DINÂMICO! */}
             <span className="text-white font-medium">{perfil.nome}</span>
             
+            {/* CORREÇÃO AQUI: Botão de Perfil Blindado */}
             <button 
               onClick={() => navigate('/perfil-medico')}
-              className="bg-white p-2 rounded-full text-[#0b2b3f] hover:bg-gray-100 transition-colors overflow-hidden flex items-center justify-center w-10 h-10"
+              className="rounded-full overflow-hidden flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 transition-colors shadow-sm"
             >
-              {/* SE TIVER FOTO, MOSTRA A FOTO. SE NÃO, MOSTRA O ÍCONE */}
               {perfil.foto ? (
+                // A mágica: w-full h-full object-cover garantem o preenchimento perfeito
                 <img src={perfil.foto} alt="Perfil" className="w-full h-full object-cover" />
               ) : (
-                <User size={20} />
+                <User size={20} className="text-[#0b2b3f]" />
               )}
             </button>
           </div>

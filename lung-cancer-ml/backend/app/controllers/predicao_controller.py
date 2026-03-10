@@ -55,12 +55,24 @@ def baixar_pdf(predicao_id):
 @jwt_required()
 def obter_predicao_json(predicao_id):
     try:
-        # Usamos a mesma função incrível que você já tinha feito pro PDF!
         dados_completos = model.buscar_por_id_completo(predicao_id) 
         
         if not dados_completos:
             return jsonify({"erro": "Predição não encontrada"}), 404
             
         return jsonify(dados_completos), 200
+    except Exception as e:
+        # Agora o terminal vai gritar o erro para você
+        print(f"🔥 ERRO NA TELA DE RESULTADO: {str(e)}") 
+        # E o React vai jogar na sua cara o que falhou no banco
+        return jsonify({"erro": f"Falha no Python: {str(e)}"}), 500
+    
+# [NOVA ROTA] Histórico de predições de um paciente específico
+@predicao_bp.route('/api/pacientes/<int:paciente_id>/predicoes', methods=['GET'])
+@jwt_required()
+def historico_paciente_predicoes(paciente_id):
+    try:
+        lista = model.listar_por_paciente(paciente_id)
+        return jsonify(lista), 200
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
