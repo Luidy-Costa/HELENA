@@ -114,14 +114,12 @@ class UsuarioModel:
             cursor.close()
             conn.close()
 
-    # [NOVO]
-    # [CORRIGIDO]
-    # [VERSÃO ORIGINAL RESTAURADA]
+   
     def buscar_medico_por_id(self, id):
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # Versão original e estável: retorna apenas a tupla exata que o seu Flask espera!
+           
             cursor.execute("""
                 SELECT id, nome_completo, crm, email, foto_perfil, ativo 
                 FROM medicos WHERE id = %s;
@@ -130,7 +128,7 @@ class UsuarioModel:
         finally:
             cursor.close()
             conn.close()
-    # [NOVO]
+ 
     def listar_medicos_por_hospital(self, hospital_id):
         conn = obter_conexao()
         cursor = conn.cursor()

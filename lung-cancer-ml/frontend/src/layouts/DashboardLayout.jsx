@@ -1,42 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, User } from 'lucide-react';
 import api from '../services/api';
 import logoImg from '../assets/logo.png';
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
+  const location = useLocation(); // Precisamos disso para saber em qual tela estamos!
 
-  // 1. Estado para guardar os dados do usuário logado
   const [perfil, setPerfil] = useState({ 
     nome: 'Carregando...', 
     foto: null 
   });
 
-  // 2. Busca os dados do usuário assim que o layout é montado
   useEffect(() => {
     const buscarDadosPerfil = async () => {
-    try {
-      const response = await api.get('/perfil');
-      // Usando setPerfil corretamente!
-      setPerfil({
-        nome: response.data.nome || response.data.nome_completo || 'Médico(a)',
-        foto: response.data.foto || response.data.foto_perfil || null
-      });
-    } catch (error) {
-      console.error("Erro ao carregar cabeçalho:", error);
-      // Fallback seguro se o backend falhar
-      setPerfil({ nome: 'Usuário', foto: null });
-    }
-  };
+      try {
+        const response = await api.get('/perfil');
+        setPerfil({
+          nome: response.data.nome || response.data.nome_completo || 'Usuário',
+          foto: response.data.foto || response.data.foto_perfil || null
+        });
+      } catch (error) {
+        console.error("Erro ao carregar cabeçalho:", error);
+        setPerfil({ nome: 'Usuário', foto: null });
+      }
+    };
 
     buscarDadosPerfil();
   }, []);
 
-  // 3. Função de Logout
   const handleLogout = () => {
     localStorage.removeItem('@LCP:token'); 
     navigate('/'); 
+  };
+
+  // Função inteligente para a Logo (Vai pro painel certo)
+  const irParaPainel = () => {
+    if (location.pathname.includes('hospital')) {
+      navigate('/painel-hospital');
+    } else {
+      navigate('/painel-medico');
+    }
+  };
+
+  // Função inteligente para a Foto (Vai pro perfil certo)
+  const irParaPerfil = () => {
+    if (location.pathname.includes('hospital')) {
+      navigate('/perfil-hospital');
+    } else {
+      navigate('/perfil-medico');
+    }
   };
 
   return (
@@ -45,8 +59,8 @@ export default function DashboardLayout({ children }) {
       {/* ================= HEADER ================= */}
       <header className="bg-[#6eb1be] px-8 py-4 flex items-center justify-between shadow-md">
         
-        {/* Logo LCP */}
-        <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/painel-medico')}>
+        {/* Logo LCP Inteligente */}
+        <div className="flex items-center gap-4 cursor-pointer" onClick={irParaPainel}>
           <img 
             src={logoImg} 
             alt="LCP Logo" 
@@ -63,13 +77,13 @@ export default function DashboardLayout({ children }) {
           <div className="flex items-center gap-3">
             <span className="text-white font-medium">{perfil.nome}</span>
             
-            {/* CORREÇÃO AQUI: Botão de Perfil Blindado */}
+            {/* Botão de Perfil Inteligente */}
             <button 
-              onClick={() => navigate('/')}
+              type="button"
+              onClick={irParaPerfil}
               className="rounded-full overflow-hidden flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-100 transition-colors shadow-sm"
             >
               {perfil.foto ? (
-                // A mágica: w-full h-full object-cover garantem o preenchimento perfeito
                 <img src={perfil.foto} alt="Perfil" className="w-full h-full object-cover" />
               ) : (
                 <User size={20} className="text-[#0b2b3f]" />
@@ -78,6 +92,7 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <button 
+            type="button"
             onClick={handleLogout}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
           >

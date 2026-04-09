@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 class AIService:
-    # --- SUAS COLUNAS DO TREINAMENTO (Cópia exata do predictor.py) ---
+    
     _COLUNAS_MODELO = [
         'Falta_Ar', 'Tosse_Sangue', 'Tosse', 'Fadiga', 'Alcoolismo', 'Chiado', 
         'Idade_30_a_50_anos', 'Idade_50_a_70_anos', 'Idade_Mais_de_70', 
@@ -19,7 +19,7 @@ class AIService:
     ]
 
     def __init__(self):
-        # Ajuste de caminho para achar a pasta 'ai_models' corretamente
+        
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
         self.model_path = os.path.join(base_dir, 'ai_models', 'modelo_pulmao.pkl')
         self.scaler_path = os.path.join(base_dir, 'ai_models', 'escalonador.pkl')
@@ -34,7 +34,7 @@ class AIService:
                 print(f"⚠️ [IA] Arquivos não encontrados em: {self.model_path}")
                 return
 
-            # Usamos joblib pois foi o que você usou no treinamento
+            
             self.modelo = joblib.load(self.model_path)
             self.escalonador = joblib.load(self.scaler_path)
             print("✅ [IA] Modelos carregados com sucesso!")
@@ -52,17 +52,15 @@ class AIService:
             # 1. Pipeline de Pré-processamento
             dataframe_escalonado = self._pre_processar_dados(prontuario)
 
-            # 2. Predição Matemática
+          
             probabilidade = self.modelo.predict_proba(dataframe_escalonado)[0]
             
             # Pegamos a chance de ser "1" (Câncer) e multiplicamos por 100
             chance_cancer = probabilidade[1] * 100
             
-            # 3. Classificação
+           
             resultado = "Alto Risco" if chance_cancer >= 50 else "Baixo Risco"
 
-            # --- A CORREÇÃO ESTÁ AQUI EMBAIXO 👇 ---
-            # O .item() ou float() transforma o numpy.float64 em float puro do Python
             return round(float(chance_cancer), 2), resultado
 
         except Exception as e:
@@ -70,10 +68,7 @@ class AIService:
             return 0.0, f"Erro: {str(e)}"
 
     def _pre_processar_dados(self, prontuario):
-        """
-        Traduz o JSON para o DataFrame binário escalonado.
-        Lógica extraída fielmente do seu predictor.py.
-        """
+        
         # Inicializa tudo com 0
         prontuario_traduzido = {coluna: 0 for coluna in self._COLUNAS_MODELO}
 
@@ -114,8 +109,6 @@ class AIService:
         if str(prontuario.get('Sat_Oxigenio', '')).lower() in ["anormal", "abnormal", "baixa"]:
             prontuario_traduzido['Sat_Oxigenio_abnormal'] = 1
         
-        # Cria e escalona o DataFrame final
-        # IMPORTANTE: Reordenar as colunas para garantir que batem com o scaler
         dataframe = pd.DataFrame([prontuario_traduzido])[self._COLUNAS_MODELO]
         
         return self.escalonador.transform(dataframe)
