@@ -23,7 +23,8 @@ class UsuarioModel:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT id, nome_fantasia, senha_hash, email FROM hospitais WHERE cnpj = %s;", (cnpj,))
+            # [REFACTOR] Adicionado o retorno do 'ativo' para validação de login
+            cursor.execute("SELECT id, nome_fantasia, senha_hash, email, ativo FROM hospitais WHERE cnpj = %s;", (cnpj,))
             return cursor.fetchone()
         finally:
             cursor.close()
@@ -94,7 +95,8 @@ class UsuarioModel:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT id, nome_completo, senha_hash, email FROM medicos WHERE crm = %s;", (crm,))
+            # [REFACTOR] Adicionado o retorno do 'ativo' para validação de login
+            cursor.execute("SELECT id, nome_completo, senha_hash, email, ativo FROM medicos WHERE crm = %s;", (crm,))
             return cursor.fetchone()
         finally:
             cursor.close()

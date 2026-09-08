@@ -6,7 +6,6 @@ class AuthService:
     def __init__(self):
         self.model = UsuarioModel()
 
-    # --- FUNÇÕES GENÉRICAS DE PERFIL (NOVO) ---
     def obter_perfil(self, usuario_id, tipo_usuario):
         if tipo_usuario == 'medico':
             dados = self.model.buscar_medico_por_id(usuario_id)
@@ -31,7 +30,6 @@ class AuthService:
         return None
 
     def atualizar_perfil(self, usuario_id, tipo_usuario, dados):
-        # dados é um dict vindo do frontend com os campos novos
         if tipo_usuario == 'medico':
             return self.model.atualizar_medico(
                 usuario_id, dados.get('nome'), dados.get('email'), 
@@ -60,10 +58,15 @@ class AuthService:
 
     def login_hospital(self, cnpj, senha_pura):
         hospital = self.model.buscar_hospital_por_cnpj(cnpj)
+        
         if not hospital or not check_password_hash(hospital[2], senha_pura):
-            return None
+            return {"erro": "CNPJ ou senha incorretos", "status": 401}
+            
+        if not hospital[4]: # Validação da trava de Soft Delete
+            return {"erro": "Conta inativada. Entre em contato com a administração geral.", "status": 403}
+
         token = create_access_token(identity=str(hospital[0]), additional_claims={"tipo": "hospital"})
-        return {"token": token, "nome": hospital[1], "id": hospital[0]}
+        return {"token": token, "nome": hospital[1], "id": hospital[0], "status": 200}
 
     # --- MÉDICO ---
     def registrar_medico(self, dados):
@@ -77,10 +80,15 @@ class AuthService:
 
     def login_medico(self, crm, senha_pura):
         medico = self.model.buscar_medico_por_crm(crm)
+        
         if not medico or not check_password_hash(medico[2], senha_pura):
-            return None
+            return {"erro": "CRM ou senha incorretos", "status": 401}
+            
+        if not medico[4]: # Validação da trava de Soft Delete
+            return {"erro": "Seu acesso foi revogado pela instituição de saúde.", "status": 403}
+
         token = create_access_token(identity=str(medico[0]), additional_claims={"tipo": "medico"})
-        return {"token": token, "nome": medico[1], "id": medico[0]}
+        return {"token": token, "nome": medico[1], "id": medico[0], "status": 200}
 
     # --- ADMIN ---
     def registrar_admin(self, dados):
@@ -94,6 +102,7 @@ class AuthService:
     def login_admin(self, email, senha_pura):
         admin = self.model.buscar_admin_por_email(email)
         if not admin or not check_password_hash(admin[2], senha_pura):
-            return None
+            return {"erro": "Credenciais inválidas", "status": 401}
+            
         token = create_access_token(identity=str(admin[0]), additional_claims={"tipo": "admin"})
-        return {"token": token, "nome": admin[1], "id": admin[0]}
+        return {"token": token, "nome": admin[1], "id": admin[0], "status": 200}

@@ -1,28 +1,19 @@
-from app.utils.database import obter_conexao
 import json
+from app.utils.database import obter_conexao
 
 class PredicaoModel:
-    def criar(self, paciente_id, medico_id, hospital_id, dados_clinicos, risco, resultado):
+    def criar(self, paciente_id, medico_id, hospital_id, dados_clinicos, probabilidade, diagnostico):
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # Converte o dicionário de sintomas para JSON string para o banco
-            dados_json = json.dumps(dados_clinicos)
-
-            query = """
-                INSERT INTO predicao
+            # Converte o dicionário Python para string JSONB antes de gravar
+            json_dados = json.dumps(dados_clinicos)
+            
+            cursor.execute("""
+                INSERT INTO predicao 
                 (paciente_id, medico_id, hospital_id, dados_clinicos, probabilidade_risco, diagnostico_final)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id;
-            """
-            cursor.execute(query, (
-                paciente_id, 
-                medico_id, 
-                hospital_id, 
-                dados_json, 
-                risco, 
-                resultado
-            ))
+                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
+            """, (paciente_id, medico_id, hospital_id, json_dados, probabilidade, diagnostico))
             
             novo_id = cursor.fetchone()[0]
             conn.commit()
@@ -33,48 +24,41 @@ class PredicaoModel:
 
     def buscar_por_id_completo(self, predicao_id):
         """
-        Busca os dados da predição fazendo JOIN com Paciente e Médico
-        para sair os nomes bonitinhos no PDF.
+        Faz um JOIN massivo para pegar tudo que o PDFService precisa em 1 única consulta.
         """
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
             query = """
                 SELECT 
-                    pr.id,
-                    pac.nome_completo as paciente,
-                    pac.data_nascimento,
-                    med.nome_completo as medico,
-                    med.crm,
-                    hosp.nome_fantasia as hospital,
-                    pr.probabilidade_risco,
-                    pr.diagnostico_final,
-                    pr.data_predicao,
-                    pr.dados_clinicos
+                    pr.id, pr.probabilidade_risco, pr.diagnostico_final, pr.dados_clinicos, pr.data_predicao,
+                    p.nome_completo AS paciente_nome, p.data_nascimento AS paciente_nasc,
+                    m.nome_completo AS medico_nome, m.crm AS medico_crm,
+                    h.nome_fantasia AS hospital_nome
                 FROM predicao pr
-                JOIN pacientes pac ON pr.paciente_id = pac.id
-                JOIN medicos med ON pr.medico_id = med.id
-                JOIN hospitais hosp ON pr.hospital_id = hosp.id
+                JOIN pacientes p ON pr.paciente_id = p.id
+                JOIN medicos m ON pr.medico_id = m.id
+                JOIN hospitais h ON pr.hospital_id = h.id
                 WHERE pr.id = %s;
             """
             cursor.execute(query, (predicao_id,))
-            res = cursor.fetchone()
+            resultado = cursor.fetchone()
             
-            if not res:
+            if not resultado:
                 return None
-            
-            # Retorna um dicionário fácil de usar
+                
+            # Formata os dados no formato exato que o PDFService espera
             return {
-                "id": res[0],
-                "paciente_nome": res[1],
-                "paciente_nasc": str(res[2]),
-                "medico_nome": res[3],
-                "medico_crm": res[4],
-                "hospital_nome": res[5],
-                "probabilidade": float(res[6]) if res[6] is not None else 0.0, # <-- A MÁGICA AQUI (Força float)
-                "resultado": res[7],
-                "data": str(res[8]),
-                "sintomas": res[9]
+                "id": resultado[0],
+                "probabilidade": float(resultado[1]),
+                "resultado": resultado[2],
+                "sintomas": resultado[3], 
+                "data": resultado[4].strftime("%d/%m/%Y %H:%M:%S"),
+                "paciente_nome": resultado[5],
+                "paciente_nasc": resultado[6].strftime("%d/%m/%Y"),
+                "medico_nome": resultado[7],
+                "medico_crm": resultado[8],
+                "hospital_nome": resultado[9]
             }
         finally:
             cursor.close()
@@ -84,15 +68,15 @@ class PredicaoModel:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # Busca todas as predições do médico, trazendo o nome do paciente e do hospital
+            # CORREÇÃO: Ajustado para p.nome_completo e pr.data_predicao conforme o Schema
             query = """
-                SELECT pr.id, p.nome, p.id AS paciente_id, h.nome_fantasia, 
-                       pr.data, pr.probabilidade, pr.resultado
+                SELECT pr.id, p.nome_completo, p.id AS paciente_id, h.nome_fantasia, 
+                       pr.data_predicao, pr.probabilidade_risco, pr.diagnostico_final
                 FROM predicao pr
                 JOIN pacientes p ON pr.paciente_id = p.id
                 JOIN hospitais h ON pr.hospital_id = h.id
                 WHERE pr.medico_id = %s
-                ORDER BY pr.data DESC;
+                ORDER BY pr.data_predicao DESC;
             """
             cursor.execute(query, (medico_id,))
             resultados = cursor.fetchall()
@@ -104,7 +88,7 @@ class PredicaoModel:
                     "paciente_nome": r[1],
                     "paciente_id": r[2],
                     "hospital_nome": r[3],
-                    "data": str(r[4]),
+                    "data": r[4].strftime("%d/%m/%Y %H:%M"),
                     "probabilidade": float(r[5]) if r[5] is not None else 0.0,
                     "resultado": r[6]
                 })
@@ -117,7 +101,6 @@ class PredicaoModel:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # CORREÇÃO: Usando os nomes exatos das tabelas e colunas do schema.sql
             query = """
                 SELECT pr.id, m.nome_completo as medico_nome, pr.data_predicao, h.nome_fantasia as hospital_nome,
                        pr.probabilidade_risco, pr.diagnostico_final
@@ -135,7 +118,7 @@ class PredicaoModel:
                 lista.append({
                     "id": r[0],
                     "medico": r[1],
-                    "data": str(r[2]),
+                    "data": r[2].strftime("%d/%m/%Y %H:%M"),
                     "hospital": r[3],
                     "porcentagem": f"{float(r[4])}%" if r[4] is not None else "0%",
                     "risco": r[5]
