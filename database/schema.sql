@@ -48,6 +48,7 @@ CREATE TABLE pacientes (
     hospital_id INT NOT NULL REFERENCES hospitais(id),
     nome_completo VARCHAR(150) NOT NULL,
     data_nascimento DATE NOT NULL, 
+    ativo BOOLEAN DEFAULT TRUE, 
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
