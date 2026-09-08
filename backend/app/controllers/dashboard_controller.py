@@ -11,7 +11,6 @@ def get_resumo():
     claims = get_jwt()
     usuario_id = get_jwt_identity()
     
-    # Se for médico, mostra as estatísticas dele
     if claims.get('tipo') == 'medico':
         try:
             stats = service.obter_estatisticas_medico(usuario_id)
@@ -35,6 +34,7 @@ def get_meus_hospitais():
         return jsonify(lista), 200
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+
 @dashboard_bp.route('/api/dashboard/hospital/<int:hospital_id>', methods=['GET'])
 @jwt_required()
 def get_stats_hospital_local(hospital_id):
