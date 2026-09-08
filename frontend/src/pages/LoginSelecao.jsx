@@ -8,13 +8,9 @@ export default function LoginSelecao() {
   const navigate = useNavigate();
 
   const handleEntrar = () => {
-    if (tipoSelecionado === "medico") {
-      navigate("/login-medico"); 
-    } else if (tipoSelecionado === "hospital") {
-      navigate("/login-hospital"); 
-    } else if (tipoSelecionado === "admin") {
-      console.log("Navegar para admin geral"); 
-    }
+    if (tipoSelecionado === "medico") navigate("/login-medico"); 
+    else if (tipoSelecionado === "hospital") navigate("/login-hospital"); 
+    else if (tipoSelecionado === "admin") console.log("Navegar para admin geral"); 
   };
 
   return (
@@ -57,9 +53,7 @@ export default function LoginSelecao() {
             }`}
           >
             <Building2 size={32} className="mb-2" />
-            <span className="text-xs font-semibold text-center">
-              Admin Hospitalar
-            </span>
+            <span className="text-xs font-semibold text-center">Admin Hospitalar</span>
           </button>
 
           <button
@@ -72,9 +66,7 @@ export default function LoginSelecao() {
             }`}
           >
             <User size={32} className="mb-2" />
-            <span className="text-xs font-semibold text-center">
-              Admin Geral
-            </span>
+            <span className="text-xs font-semibold text-center">Admin Geral</span>
           </button>
         </div>
 

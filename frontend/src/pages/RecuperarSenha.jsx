@@ -20,8 +20,7 @@ export default function RecuperarSenha() {
       await api.post('/senha/recuperar', { email });
       setPasso(2);
     } catch (error) {
-      console.error('Erro:', error.response?.data?.erro || error.message);
-      alert(error.response?.data?.erro || "Erro ao enviar e-mail");
+      alert(error.response?.data?.erro || "Erro ao enviar e-mail. Verifique o endereço informado.");
     }
   };
 
@@ -31,8 +30,7 @@ export default function RecuperarSenha() {
       await api.post('/senha/validar', { email, codigo });
       setPasso(3);
     } catch (error) {
-      console.error('Erro:', error.response?.data?.erro || error.message);
-      alert("Código inválido ou expirado");
+      alert("Código inválido ou expirado. Verifique novamente.");
     }
   };
 
@@ -46,11 +44,10 @@ export default function RecuperarSenha() {
     
     try {
       await api.post('/senha/redefinir', { email, codigo, nova_senha: novaSenha });
-      alert("Senha alterada com sucesso!");
+      alert("Senha alterada com sucesso! Faça login com sua nova credencial.");
       navigate('/login-medico'); 
     } catch (error) {
-      console.error('Erro:', error.response?.data?.erro || error.message);
-      alert("Erro ao redefinir a senha.");
+      alert(error.response?.data?.erro || "Erro ao redefinir a senha.");
     }
   };
 
@@ -87,15 +84,9 @@ export default function RecuperarSenha() {
                 />
               </div>
               <button type="submit" className="w-full py-3.5 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30">
-                Enviar código de recuperação
+                Enviar código
               </button>
             </form>
-
-            <div className="mt-8 border-t border-gray-200 pt-6 text-center">
-              <p className="text-sm text-[#0b2b3f] font-medium">
-                Lembrou da senha? <button onClick={() => navigate('/login-medico')} className="text-[#6eb1be] hover:underline font-bold">Fazer login</button>
-              </p>
-            </div>
           </div>
         )}
 
@@ -105,7 +96,7 @@ export default function RecuperarSenha() {
               <Mail size={48} className="text-[#0b2b3f] mb-4" />
               <h2 className="text-[32px] font-bold text-[#0b2b3f] mb-2">Verificar código</h2>
               <p className="text-[#6eb1be] text-center font-medium">
-                Digite o código de 5 dígitos que enviamos<br/>para o seu email
+                Digite o código de 5 dígitos enviado<br/>para o seu email
               </p>
             </div>
 
@@ -123,12 +114,6 @@ export default function RecuperarSenha() {
                 Verificar Código
               </button>
             </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-[#0b2b3f] font-medium">
-                Não recebeu o código? <button className="text-[#6eb1be] hover:underline font-bold">Reenviar</button>
-              </p>
-            </div>
           </div>
         )}
 
@@ -170,8 +155,8 @@ export default function RecuperarSenha() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <button type="submit" className="py-3 px-8 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold transition-colors shadow-lg shadow-[#6eb1be]/30">
-                  Alterar
+                <button type="submit" className="py-3 px-8 w-full bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold transition-colors shadow-lg shadow-[#6eb1be]/30">
+                  Alterar Senha
                 </button>
               </div>
             </form>

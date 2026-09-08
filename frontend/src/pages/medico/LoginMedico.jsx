@@ -9,34 +9,29 @@ export default function LoginMedico() {
   const [crm, setCrm] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setCarregando(true);
     
     try {
-      const response = await api.post('/login/medico', { 
-        crm, 
-        senha 
-      });
+      const response = await api.post('/login/medico', { crm, senha });
       
-      const token = response.data.token;
-      
-      if (token) {
-        localStorage.setItem('@HELENA:token', token);
+      if (response.data.token) {
+        localStorage.setItem('@HELENA:token', response.data.token);
         navigate('/painel-medico');
       }
     } catch (error) {
-      if (error.response) {
-        if (error.response.status === 401) {
-          alert("CRM ou senha incorretos.");
-        } else {
-          alert("Erro na autenticação. Verifique suas credenciais e tente novamente.");
-          console.error('Erro de resposta do servidor:', error.response.data);
-        }
+      if (error.response?.status === 403) {
+        alert("Acesso bloqueado: Seu perfil foi inativado. Contate o administrador.");
+      } else if (error.response?.status === 401) {
+        alert("CRM ou senha incorretos.");
       } else {
-        console.error('Erro de conexão:', error.message);
         alert("Não foi possível conectar ao servidor. Verifique sua conexão.");
       }
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -52,16 +47,7 @@ export default function LoginMedico() {
 
         <div className="flex flex-col items-center mt-12 mb-8">
           <div className="mb-4">
-            <svg
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#0b2b3f"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#0b2b3f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -78,12 +64,10 @@ export default function LoginMedico() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
-              CRM
-            </label>
+            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">CRM</label>
             <input
               type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] focus:border-transparent outline-none text-[#0b2b3f] transition-all"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f] transition-all"
               placeholder="Digite seu CRM..."
               value={crm}
               onChange={(e) => setCrm(e.target.value)}
@@ -92,13 +76,11 @@ export default function LoginMedico() {
           </div>
 
           <div>
-            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
-              Senha
-            </label>
+            <label className="block text-[#0b2b3f] font-bold text-sm mb-2">Senha</label>
             <div className="relative">
               <input
                 type={mostrarSenha ? "text" : "password"}
-                className="w-full pl-4 pr-12 py-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] focus:border-transparent outline-none text-[#0b2b3f] transition-all"
+                className="w-full pl-4 pr-12 py-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f] transition-all"
                 placeholder="••••••••"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
@@ -115,27 +97,22 @@ export default function LoginMedico() {
           </div>
 
           <div className="flex justify-start">
-            <Link
-              to="/recuperar-senha"
-              className="text-sm font-bold text-[#6eb1be] hover:underline"
-            >
+            <Link to="/recuperar-senha" className="text-sm font-bold text-[#6eb1be] hover:underline">
               Esqueceu a senha?
             </Link>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3.5 mt-2 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30"
+            disabled={carregando}
+            className="w-full py-3.5 mt-2 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30 disabled:opacity-50"
           >
-            Entrar
+            {carregando ? "Entrando..." : "Entrar"}
           </button>
 
           <p className="mt-8 text-center text-sm text-[#0b2b3f] font-medium pt-4">
             Não possui conta?{" "}
-            <Link
-              to="/cadastro-medico"
-              className="text-[#6eb1be] hover:underline font-bold ml-1"
-            >
+            <Link to="/cadastro-medico" className="text-[#6eb1be] hover:underline font-bold ml-1">
               Cadastre-se
             </Link>
           </p>
