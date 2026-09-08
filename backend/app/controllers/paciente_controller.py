@@ -17,26 +17,49 @@ def listar_pacientes():
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
 
-# [NOVO] Rota para Editar Paciente
 @paciente_bp.route('/api/pacientes/<int:paciente_id>', methods=['PUT'])
 @jwt_required()
 def editar_paciente(paciente_id):
     dados = request.json
-    # Espera: { "nome": "Novo Nome", "data_nascimento": "YYYY-MM-DD" }
-    
     if not dados.get('nome') or not dados.get('data_nascimento'):
         return jsonify({"erro": "Nome e Data de Nascimento são obrigatórios"}), 400
 
     try:
         sucesso = service.atualizar_paciente(paciente_id, dados)
-        
         if sucesso:
             return jsonify({"status": "sucesso", "mensagem": "Paciente atualizado!"}), 200
-        else:
-            return jsonify({"erro": "Paciente não encontrado."}), 404
+        return jsonify({"erro": "Paciente não encontrado."}), 404
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
-    
+
+# [NOVA ROTA] Inativação (Soft Delete - RI-2)
+@paciente_bp.route('/api/pacientes/<int:paciente_id>/inativar', methods=['PATCH'])
+@jwt_required()
+def inativar_paciente(paciente_id):
+    try:
+        sucesso = service.model.inativar(paciente_id)
+        if sucesso:
+            return jsonify({"status": "sucesso", "mensagem": "Paciente inativado do sistema."}), 200
+        return jsonify({"erro": "Paciente não encontrado."}), 404
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# [NOVA ROTA] Exclusão Física Excepcional (Hard Delete - RI-3)
+@paciente_bp.route('/api/pacientes/<int:paciente_id>', methods=['DELETE'])
+@jwt_required()
+def excluir_paciente(paciente_id):
+    claims = get_jwt()
+    if claims.get('tipo') != 'hospital' and claims.get('tipo') != 'medico':
+        return jsonify({"erro": "Acesso negado."}), 403
+
+    try:
+        sucesso = service.model.excluir_fisicamente(paciente_id)
+        if sucesso:
+            return jsonify({"status": "sucesso", "mensagem": "Registro excluído permanentemente."}), 200
+        return jsonify({"erro": "Paciente não encontrado ou já possui laudos (violação de integridade)."}), 400
+    except Exception as e:
+        return jsonify({"erro": "Não é possível excluir um paciente que já possui laudos emitidos."}), 400
+
 @paciente_bp.route('/api/hospitais/<int:hospital_id>/pacientes', methods=['GET'])
 @jwt_required()
 def listar_pacientes_do_hospital(hospital_id):
@@ -47,23 +70,11 @@ def listar_pacientes_do_hospital(hospital_id):
         return jsonify({"erro": "Acesso negado"}), 403
         
     try:
-        # Verifica se o médico tem vínculo com este hospital
         if not service.usuario_model.verificar_vinculo(medico_id, hospital_id):
             return jsonify({"erro": "Você não tem permissão para acessar este hospital"}), 403
             
-        # Busca os pacientes no banco
         pacientes_brutos = service.model.listar_por_hospital(hospital_id)
-        
-        lista = []
-        for p in pacientes_brutos:
-            # O retorno do banco é a tupla: (id, nome_completo, data_nascimento, data_cadastro)
-            lista.append({
-                "id": p[0],
-                "nome": p[1],
-                "dataNascimento": str(p[2]),
-                "ultimaAtualizacao": str(p[3]) # No futuro pode ser a data da última predição
-            })
-            
+        lista = [{"id": p[0], "nome": p[1], "dataNascimento": str(p[2]), "ultimaAtualizacao": str(p[3])} for p in pacientes_brutos]
         return jsonify(lista), 200
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
