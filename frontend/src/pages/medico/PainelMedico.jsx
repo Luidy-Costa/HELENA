@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Activity, Clock, Search } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
@@ -7,33 +7,29 @@ import api from '../../services/api';
 export default function PainelMedico() {
   const navigate = useNavigate();
 
-  // 1. Estado para guardar as estatísticas que virão do Postgres
   const [estatisticas, setEstatisticas] = useState({
     total_predicoes: 0,
     pacientes_atendidos: 0,
     casos_graves: 0
   });
 
-  // 2. Estado para a lista real de hospitais vinculados ao médico
   const [hospitais, setHospitais] = useState([]);
+  const [termoBusca, setTermoBusca] = useState('');
 
-  // 3. Busca os dados no Flask automaticamente assim que a tela abre
   useEffect(() => {
     const carregarEstatisticas = async () => {
       try {
         const response = await api.get('/dashboard/resumo');
-        setEstatisticas(response.data); // Salva os dados do banco no estado
+        setEstatisticas(response.data);
       } catch (error) {
         console.error("Erro ao buscar resumo:", error);
-        // Se der erro 401 (Não Autorizado), o Token expirou ou sumiu. Mandamos pro login.
         if (error.response?.status === 401) {
-          localStorage.removeItem('@LCP:token');
+          localStorage.removeItem('@HELENA:token');
           navigate('/login-medico');
         }
       }
     };
 
-    // NOVA FUNÇÃO: Busca os hospitais vinculados
     const carregarHospitais = async () => {
       try {
         const response = await api.get('/dashboard/meus-hospitais');
@@ -44,22 +40,25 @@ export default function PainelMedico() {
     };
 
     carregarEstatisticas();
-    carregarHospitais(); // Chama a nova função ao carregar a tela
+    carregarHospitais();
   }, [navigate]);
+
+  const hospitaisFiltrados = hospitais.filter((hospital) =>
+    hospital.nome.toLowerCase().includes(termoBusca.toLowerCase())
+  );
 
   return (
     <DashboardLayout>
-      
-      {/* Título da Página */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#0b2b3f] mb-1">Painel Administrativo do Médico</h2>
-        <p className="text-[#6eb1be] text-lg font-medium">Visão geral do sistema Lung Cancer Prediction</p>
+        <h2 className="text-3xl font-bold text-[#0b2b3f] mb-1">
+          Painel Administrativo do Médico
+        </h2>
+        <p className="text-[#6eb1be] text-lg font-medium">
+          Visão geral do sistema HELENA
+        </p>
       </div>
 
-      {/* Grid de Cards Estatísticos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        
-        {/* Card 1: Hospitais */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
             <Building2 size={32} />
@@ -70,7 +69,6 @@ export default function PainelMedico() {
           </div>
         </div>
 
-        {/* Card 2: Pacientes Atendidos */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
             <Activity size={32} />
@@ -81,7 +79,6 @@ export default function PainelMedico() {
           </div>
         </div>
 
-        {/* Card 3: Predições Feitas */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]">
             <Clock size={32} />
@@ -93,14 +90,14 @@ export default function PainelMedico() {
         </div>
       </div>
 
-      {/* Seção da Tabela */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <div className="mb-6">
           <h3 className="text-2xl font-bold text-[#0b2b3f]">Hospitais Cadastrados</h3>
-          <p className="text-gray-500 font-medium text-sm">Gerencie as instituições que utilizam o sistema</p>
+          <p className="text-gray-500 font-medium text-sm">
+            Gerencie as instituições que utilizam o sistema
+          </p>
         </div>
 
-        {/* Barra de Pesquisa */}
         <div className="relative mb-6">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
@@ -109,10 +106,11 @@ export default function PainelMedico() {
             type="text"
             className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-full bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f]"
             placeholder="Buscar por hospital..."
+            value={termoBusca}
+            onChange={(e) => setTermoBusca(e.target.value)}
           />
         </div>
 
-        {/* Tabela */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -125,8 +123,8 @@ export default function PainelMedico() {
               </tr>
             </thead>
             <tbody>
-              {hospitais.length > 0 ? (
-                hospitais.map((hospital) => (
+              {hospitaisFiltrados.length > 0 ? (
+                hospitaisFiltrados.map((hospital) => (
                   <tr key={hospital.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="py-4">
                       <div className="flex items-center gap-3">
@@ -156,7 +154,7 @@ export default function PainelMedico() {
               ) : (
                 <tr>
                   <td colSpan="5" className="py-8 text-center text-gray-500 font-medium">
-                    Nenhum hospital vinculado ainda.
+                    {termoBusca ? 'Nenhum hospital encontrado para a busca.' : 'Nenhum hospital vinculado ainda.'}
                   </td>
                 </tr>
               )}
@@ -164,7 +162,6 @@ export default function PainelMedico() {
           </table>
         </div>
       </div>
-
     </DashboardLayout>
   );
 }

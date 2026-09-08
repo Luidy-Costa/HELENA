@@ -33,7 +33,6 @@ export default function LoginSelecao() {
           Tipo de acesso
         </label>
 
-        {/* Botões de Seleção */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <button
             type="button"
@@ -79,7 +78,6 @@ export default function LoginSelecao() {
           </button>
         </div>
 
-        {/* Botão de Entrar */}
         <button
           onClick={handleEntrar}
           disabled={!tipoSelecionado}

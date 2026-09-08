@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Save, X, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../../layouts/DashboardLayout';
@@ -6,19 +6,15 @@ import api from '../../services/api';
 
 export default function FormularioPredicao() {
   const navigate = useNavigate();
-  
-  // Captura o hospital que veio na "bagagem" da tela anterior
   const location = useLocation();
   const hospital = location.state?.hospital;
 
-  // Estados dos Dados do Paciente
   const [paciente, setPaciente] = useState({
     nome: '',
     dataNascimento: '',
     idPaciente: ''
   });
 
-  // Estados das Respostas do Formulário Médico
   const [form, setForm] = useState({
     idade: '', genero: '', fumo: '', alcoolismo: '',
     freqRespiratoria: '', freqCardiaca: '', pressaoSistolica: '',
@@ -28,22 +24,19 @@ export default function FormularioPredicao() {
 
   const [observacoes, setObservacoes] = useState('');
 
-  // Função para lidar com a submissão
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Validações Iniciais
     if (!hospital) {
       alert("Erro: Nenhum hospital selecionado. Volte e acesse o hospital novamente.");
       return;
     }
 
     if (!paciente.nome.trim() || !paciente.dataNascimento.trim()) {
-      alert("⚠️ Atenção: O Nome e a Data de Nascimento do paciente são obrigatórios!");
+      alert("Atenção: O Nome e a Data de Nascimento do paciente são obrigatórios!");
       return;
     }
 
-    // 2. Empacotando os dados EXATAMENTE como o ai_service.py e o PostgreSQL esperam
     const payload = {
       paciente: {
         nome: paciente.nome,
@@ -53,9 +46,9 @@ export default function FormularioPredicao() {
       sintomas: {
         Idade: parseInt(form.idade) || 0,
         Genero: form.genero,
-        Fumo: form.fumo, // "fumante_ativo", "ex_fumante", "nao_fumante"
+        Fumo: form.fumo,
         Alcoolismo: form.alcoolismo === 'sim' ? 1 : 0,
-        Freq_Respiratoria: form.freqRespiratoria, // "normal", "anormal"
+        Freq_Respiratoria: form.freqRespiratoria,
         Freq_Cardiaca: form.freqCardiaca,
         Pressao_Sistolica: form.pressaoSistolica,
         Pressao_Diastolica: form.pressaoDiastolica,
@@ -71,13 +64,9 @@ export default function FormularioPredicao() {
     };
 
     try {
-      // 3. Envia para a Inteligência Artificial e para o Banco de Dados
       const response = await api.post('/predicoes', payload);
-      
-      // 4. Extraímos o número exato que o Python devolveu
       const idExato = response.data.data.predicao_id;
 
-      // 5. Se deu certo, navega para a tela de Resultado levando apenas o ID puro
       navigate('/resultado-predicao', { 
         state: { 
           id_predicao: idExato,
@@ -86,14 +75,12 @@ export default function FormularioPredicao() {
           respostasForm: form
         } 
       });
-
     } catch (error) {
-      console.error("Erro na IA/Servidor:", error);
-      alert(error.response?.data?.erro || "Erro ao processar a predição pela Inteligência Artificial.");
+      console.error("Erro no processamento da predição:", error);
+      alert(error.response?.data?.erro || "Erro ao processar a predição.");
     }
   };
 
-  // Mini-componente para os botões arredondados (Pills)
   const OpcoesPill = ({ label, nomeKey, opcoes }) => (
     <div className="mb-5">
       <label className="block text-[#0b2b3f] font-bold text-sm mb-2">{label}</label>
@@ -105,8 +92,8 @@ export default function FormularioPredicao() {
             onClick={() => setForm({ ...form, [nomeKey]: opcao.valor })}
             className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
               form[nomeKey] === opcao.valor
-                ? 'bg-[#6eb1be] text-white shadow-md' // Selecionado
-                : 'bg-[#6eb1be]/20 text-[#0b2b3f] hover:bg-[#6eb1be]/40' // Não selecionado
+                ? 'bg-[#6eb1be] text-white shadow-md'
+                : 'bg-[#6eb1be]/20 text-[#0b2b3f] hover:bg-[#6eb1be]/40'
             }`}
           >
             {opcao.label}
@@ -118,8 +105,6 @@ export default function FormularioPredicao() {
 
   return (
     <DashboardLayout>
-      
-      {/* Botão de Voltar */}
       <button 
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-[#6eb1be] hover:text-[#0b2b3f] transition-colors font-bold text-sm mb-6"
@@ -127,17 +112,16 @@ export default function FormularioPredicao() {
         <ArrowLeft size={16} /> Voltar
       </button>
 
-      {/* Títulos */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-[#0b2b3f] mb-1">Formulário Clínico</h2>
         <p className="text-[#6eb1be] text-lg font-medium">Cadastro de nova predição e avaliação de risco</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        
-        {/* =============== SEÇÃO 1: DADOS DO PACIENTE =============== */}
         <div className="mb-10">
-          <h3 className="text-xl font-bold text-[#0b2b3f] mb-4 border-b border-gray-100 pb-2">Dados do Paciente</h3>
+          <h3 className="text-xl font-bold text-[#0b2b3f] mb-4 border-b border-gray-100 pb-2">
+            Dados do Paciente
+          </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <div>
@@ -162,7 +146,7 @@ export default function FormularioPredicao() {
             </div>
           </div>
           <div className="w-full md:w-1/2 md:pr-3">
-            <label className="block text-[#0b2b3f] font-bold text-sm mb-1">Id do paciente</label>
+            <label className="block text-[#0b2b3f] font-bold text-sm mb-1">ID do paciente</label>
             <input
               type="text"
               className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f]"
@@ -173,14 +157,12 @@ export default function FormularioPredicao() {
           </div>
         </div>
 
-        {/* =============== SEÇÃO 2: PERGUNTAS DA IA =============== */}
         <div className="mb-10">
-          <h3 className="text-xl font-bold text-[#0b2b3f] mb-6 border-b border-gray-100 pb-2">Formulário - Responda as perguntas abaixo</h3>
+          <h3 className="text-xl font-bold text-[#0b2b3f] mb-6 border-b border-gray-100 pb-2">
+            Formulário - Responda as perguntas abaixo
+          </h3>
           
-          {/* Grid de 2 Colunas para as perguntas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
-            
-            {/* Coluna Esquerda */}
             <div>
               <OpcoesPill label="Qual a faixa etária do paciente?" nomeKey="idade" opcoes={[
                 { label: '30 a 50', valor: '30_a_50' }, { label: '50 a 70', valor: '50_a_70' }, { label: 'mais de 70', valor: 'mais_70' }
@@ -211,7 +193,6 @@ export default function FormularioPredicao() {
               ]} />
             </div>
 
-            {/* Coluna Direita */}
             <div>
               <OpcoesPill label="Índice de Massa Corporal (IMC):" nomeKey="imc" opcoes={[
                 { label: 'normal', valor: 'normal' }, { label: 'anormal', valor: 'anormal' }
@@ -232,13 +213,13 @@ export default function FormularioPredicao() {
                 { label: 'sim', valor: 'sim' }, { label: 'não', valor: 'nao' }
               ]} />
             </div>
-
           </div>
         </div>
 
-        {/* =============== SEÇÃO 3: OBSERVAÇÕES =============== */}
         <div className="mb-8">
-          <h3 className="text-xl font-bold text-[#0b2b3f] mb-4 border-b border-gray-100 pb-2">Observações Adicionais (Opcional)</h3>
+          <h3 className="text-xl font-bold text-[#0b2b3f] mb-4 border-b border-gray-100 pb-2">
+            Observações Adicionais (Opcional)
+          </h3>
           <textarea
             className="w-full px-4 py-4 border border-gray-200 rounded-xl bg-[#f4f9fb]/50 focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f] min-h-[120px] resize-y"
             placeholder="Registre aqui informações complementares, resultados de exames específicos ou outras observações relevantes..."
@@ -247,7 +228,6 @@ export default function FormularioPredicao() {
           ></textarea>
         </div>
 
-        {/* =============== BOTÕES DE AÇÃO =============== */}
         <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
           <button 
             type="submit" 
@@ -263,7 +243,6 @@ export default function FormularioPredicao() {
             <X size={20} /> Cancelar
           </button>
         </div>
-
       </form>
     </DashboardLayout>
   );

@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  helena-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helena_frontend_app
+    ports:
+      - "3001:80"
+    restart: always

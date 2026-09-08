@@ -7,24 +7,18 @@ import api from '../services/api';
 export default function RecuperarSenha() {
   const navigate = useNavigate();
   
-  // Controle de qual passo estamos (1: Email, 2: Código, 3: Nova Senha)
   const [passo, setPasso] = useState(1);
-  
-  // Dados do formulário
   const [email, setEmail] = useState('');
   const [codigo, setCodigo] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-  // --- Funções de Ação ---
-// --- Funções de Ação (Agora usando o 'api' real) ---
   const handleEnviarEmail = async (e) => {
     e.preventDefault();
     try {
-      // Aqui a mágica acontece: chamamos o Flask usando a API
       await api.post('/senha/recuperar', { email });
-      setPasso(2); // Avança pro passo 2
+      setPasso(2);
     } catch (error) {
       console.error('Erro:', error.response?.data?.erro || error.message);
       alert(error.response?.data?.erro || "Erro ao enviar e-mail");
@@ -34,9 +28,8 @@ export default function RecuperarSenha() {
   const handleVerificarCodigo = async (e) => {
     e.preventDefault();
     try {
-      // Validando o código no banco
       await api.post('/senha/validar', { email, codigo });
-      setPasso(3); // Avança pro passo 3
+      setPasso(3);
     } catch (error) {
       console.error('Erro:', error.response?.data?.erro || error.message);
       alert("Código inválido ou expirado");
@@ -52,7 +45,6 @@ export default function RecuperarSenha() {
     }
     
     try {
-      // Trocando a senha de fato
       await api.post('/senha/redefinir', { email, codigo, nova_senha: novaSenha });
       alert("Senha alterada com sucesso!");
       navigate('/login-medico'); 
@@ -65,8 +57,6 @@ export default function RecuperarSenha() {
   return (
     <AuthLayout>
       <div className="relative w-full flex flex-col items-center">
-        
-        {/* Botão Voltar (Volta um passo, ou volta pro Login se estiver no passo 1) */}
         <button 
           onClick={() => passo > 1 ? setPasso(passo - 1) : navigate(-1)}
           className="absolute -top-6 -left-4 flex items-center gap-2 px-4 py-2 bg-[#6eb1be] text-white rounded-lg hover:bg-[#5ca0ad] transition-colors font-medium text-sm"
@@ -74,7 +64,6 @@ export default function RecuperarSenha() {
           <ArrowLeft size={16} /> Voltar
         </button>
 
-        {/* ================= PASSO 1: PEDIR E-MAIL ================= */}
         {passo === 1 && (
           <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex flex-col items-center mt-12 mb-6">
@@ -110,7 +99,6 @@ export default function RecuperarSenha() {
           </div>
         )}
 
-        {/* ================= PASSO 2: CÓDIGO DE 5 DÍGITOS ================= */}
         {passo === 2 && (
           <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex flex-col items-center mt-12 mb-6">
@@ -122,14 +110,13 @@ export default function RecuperarSenha() {
             </div>
 
             <form onSubmit={handleVerificarCodigo} className="space-y-6 flex flex-col items-center">
-              {/* Input estilizado para parecer 5 blocos (usando letter-spacing) */}
               <input
                 type="text"
                 maxLength="5"
                 className="w-3/4 px-4 py-3 border-2 border-[#0b2b3f] rounded-lg bg-white focus:ring-2 focus:ring-[#6eb1be] outline-none text-[#0b2b3f] text-center text-3xl tracking-[1em] font-bold"
                 placeholder="•••••"
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} // Aceita só números
+                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
                 required
               />
               <button type="submit" className="w-full py-3.5 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30">
@@ -145,7 +132,6 @@ export default function RecuperarSenha() {
           </div>
         )}
 
-        {/* ================= PASSO 3: NOVA SENHA ================= */}
         {passo === 3 && (
           <div className="w-full animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex flex-col items-center mt-12 mb-6">
@@ -191,7 +177,6 @@ export default function RecuperarSenha() {
             </form>
           </div>
         )}
-
       </div>
     </AuthLayout>
   );

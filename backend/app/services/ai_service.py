@@ -31,15 +31,15 @@ class AIService:
     def _carregar_modelos(self):
         try:
             if not os.path.exists(self.model_path) or not os.path.exists(self.scaler_path):
-                print(f"⚠️ [IA] Arquivos não encontrados em: {self.model_path}")
+                print(f"[IA] Arquivos não encontrados em: {self.model_path}")
                 return
 
             
             self.modelo = joblib.load(self.model_path)
             self.escalonador = joblib.load(self.scaler_path)
-            print("✅ [IA] Modelos carregados com sucesso!")
+            print("[IA] Modelos carregados com sucesso!")
         except Exception as e:
-            print(f"❌ [IA] Erro crítico ao carregar modelos: {e}")
+            print(f"[IA] Erro crítico ao carregar modelos: {e}")
 
     def prever_risco(self, prontuario):
         """
@@ -64,7 +64,7 @@ class AIService:
             return round(float(chance_cancer), 2), resultado
 
         except Exception as e:
-            print(f"❌ Erro durante predição: {e}")
+            print(f"Erro durante predição: {e}")
             return 0.0, f"Erro: {str(e)}"
 
     def _pre_processar_dados(self, prontuario):

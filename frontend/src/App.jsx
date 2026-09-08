@@ -1,10 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react_router_dom';
 
-// Importações - Telas Gerais (Na raiz de pages)
 import LoginSelecao from './pages/LoginSelecao';
 import RecuperarSenha from './pages/RecuperarSenha';
 
-// Importações - Ator: Médico (Dentro da pasta medico)
+// Módulo Médico
 import LoginMedico from './pages/medico/LoginMedico';
 import CadastroMedico from './pages/medico/CadastroMedico';
 import PainelMedico from './pages/medico/PainelMedico';
@@ -15,7 +14,7 @@ import PerfilPaciente from './pages/medico/PerfilPaciente';
 import HistoricoPredicoes from './pages/medico/HistoricoPredicoes';
 import PerfilMedico from './pages/medico/PerfilMedico';
 
-// Importações - Ator: Hospital (Dentro da pasta hospital)
+// Módulo Hospital
 import LoginHospital from './pages/hospital/LoginHospital';
 import CadastroHospital from './pages/hospital/CadastroHospital';
 import PainelHospital from './pages/hospital/PainelHospital';
@@ -30,30 +29,36 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rotas Iniciais e Gerais */}
+        {/* Autenticação & Geral */}
         <Route path="/" element={<LoginSelecao />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
 
-        {/* Rotas do Ator Médico */}
+        {/* Fluxo Médico */}
         <Route path="/login-medico" element={<LoginMedico />} />
         <Route path="/cadastro-medico" element={<CadastroMedico />} />
         <Route path="/painel-medico" element={<PainelMedico />} />
         <Route path="/hospital-interna" element={<HospitalInterna />} />
+        <Route path="/hospital-interna/:id" element={<HospitalInterna />} />
         <Route path="/formulario-predicao" element={<FormularioPredicao />} />
         <Route path="/resultado-predicao" element={<ResultadoPredicao />} />
+        <Route path="/resultado-predicao/:id" element={<ResultadoPredicao />} />
         <Route path="/perfil-paciente" element={<PerfilPaciente />} />
+        <Route path="/perfil-paciente/:id" element={<PerfilPaciente />} />
         <Route path="/historico-predicoes" element={<HistoricoPredicoes />} />
         <Route path="/perfil-medico" element={<PerfilMedico />} />
+        <Route path="/perfil-medico/:id" element={<PerfilMedico />} />
 
-        {/* Rotas do Ator Hospital */}
+        {/* Fluxo Hospital */}
         <Route path="/login-hospital" element={<LoginHospital />} />
         <Route path="/cadastro-hospital" element={<CadastroHospital />} />
         <Route path="/painel-hospital" element={<PainelHospital />} />
         <Route path="/perfil-hospital" element={<PerfilHospital />} />
         <Route path="/convidar-medico" element={<ConvidarMedico />} />
         <Route path="/perfil-medico-hospital" element={<PerfilMedicoHospital />} />
+        <Route path="/perfil-medico-hospital/:id" element={<PerfilMedicoHospital />} />
         <Route path="/historico-pacientes-hospital" element={<HistoricoPacientesHospital />} />
         <Route path="/perfil-paciente-hospital" element={<PerfilPacienteHospital />} />
+        <Route path="/perfil-paciente-hospital/:id" element={<PerfilPacienteHospital />} />
         <Route path="/previsao-hospital" element={<PrevisaoHospital />} />
       </Routes>
     </BrowserRouter>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import AuthLayout from "../../layouts/AuthLayout";
-import api from '../../services/api'; // <--- O SALVADOR DA PÁTRIA AQUI
+import api from '../../services/api';
 
 export default function LoginMedico() {
   const navigate = useNavigate();
@@ -10,11 +10,10 @@ export default function LoginMedico() {
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
-const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     
     try {
-      // Aqui sim faz sentido, pois crm e senha vêm do formulário desta tela!
       const response = await api.post('/login/medico', { 
         crm, 
         senha 
@@ -23,23 +22,20 @@ const handleLogin = async (e) => {
       const token = response.data.token;
       
       if (token) {
-        localStorage.setItem('@LCP:token', token);
-        console.log("Login bem-sucedido. Bem-vindo,", response.data.nome);
+        localStorage.setItem('@HELENA:token', token);
         navigate('/painel-medico');
       }
     } catch (error) {
       if (error.response) {
-        // O Flask respondeu, mas com algum erro (401, 404, 500)
         if (error.response.status === 401) {
           alert("CRM ou senha incorretos.");
         } else {
-          alert(`Erro do Flask (Status ${error.response.status}): ` + (error.response.data?.erro || "Verifique o terminal do Python"));
-          console.error('Detalhes do backend:', error.response.data);
+          alert("Erro na autenticação. Verifique suas credenciais e tente novamente.");
+          console.error('Erro de resposta do servidor:', error.response.data);
         }
       } else {
-        // O Flask nem conseguiu responder (Servidor caiu ou erro de rede)
-        console.error('Erro de rede:', error.message);
-        alert("O servidor Flask não respondeu. Ele está rodando na porta 5000?");
+        console.error('Erro de conexão:', error.message);
+        alert("Não foi possível conectar ao servidor. Verifique sua conexão.");
       }
     }
   };
@@ -47,7 +43,6 @@ const handleLogin = async (e) => {
   return (
     <AuthLayout>
       <div className="relative w-full">
-        {/* Botão Voltar */}
         <button
           onClick={() => navigate('/')}
           className="absolute -top-6 -left-4 flex items-center gap-2 px-4 py-2 bg-[#6eb1be] text-white rounded-lg hover:bg-[#5ca0ad] transition-colors font-medium text-sm"
@@ -55,9 +50,7 @@ const handleLogin = async (e) => {
           <ArrowLeft size={16} /> Voltar
         </button>
 
-        {/* Ícone e Títulos (Fiel ao Figma) */}
         <div className="flex flex-col items-center mt-12 mb-8">
-          {/* Ícone imitando o design */}
           <div className="mb-4">
             <svg
               width="64"
@@ -83,9 +76,7 @@ const handleLogin = async (e) => {
           </p>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Campo CRM */}
           <div>
             <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
               CRM
@@ -100,7 +91,6 @@ const handleLogin = async (e) => {
             />
           </div>
 
-          {/* Campo Senha */}
           <div>
             <label className="block text-[#0b2b3f] font-bold text-sm mb-2">
               Senha
@@ -124,7 +114,6 @@ const handleLogin = async (e) => {
             </div>
           </div>
 
-          {/* Esqueceu a senha */}
           <div className="flex justify-start">
             <Link
               to="/recuperar-senha"
@@ -134,7 +123,6 @@ const handleLogin = async (e) => {
             </Link>
           </div>
 
-          {/* Botão Entrar */}
           <button
             type="submit"
             className="w-full py-3.5 mt-2 bg-[#6eb1be] hover:bg-[#5ca0ad] text-white rounded-lg font-bold text-lg transition-colors shadow-lg shadow-[#6eb1be]/30"
@@ -142,7 +130,6 @@ const handleLogin = async (e) => {
             Entrar
           </button>
 
-          {/* Link de Cadastro */}
           <p className="mt-8 text-center text-sm text-[#0b2b3f] font-medium pt-4">
             Não possui conta?{" "}
             <Link

@@ -6,7 +6,7 @@ import logoImg from '../assets/logo.png';
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
-  const location = useLocation(); // Precisamos disso para saber em qual tela estamos!
+  const location = useLocation();
 
   const [perfil, setPerfil] = useState({ 
     nome: 'Carregando...', 
@@ -31,11 +31,11 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem('@HELENA:token'); 
     localStorage.removeItem('@LCP:token'); 
     navigate('/'); 
   };
 
-  // Função inteligente para a Logo (Vai pro painel certo)
   const irParaPainel = () => {
     if (location.pathname.includes('hospital')) {
       navigate('/painel-hospital');
@@ -44,7 +44,6 @@ export default function DashboardLayout({ children }) {
     }
   };
 
-  // Função inteligente para a Foto (Vai pro perfil certo)
   const irParaPerfil = () => {
     if (location.pathname.includes('hospital')) {
       navigate('/perfil-hospital');
@@ -55,29 +54,21 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-[#f4f9fb] font-sans flex flex-col">
-      
-      {/* ================= HEADER ================= */}
       <header className="bg-[#6eb1be] px-8 py-4 flex items-center justify-between shadow-md">
-        
-        {/* Logo LCP Inteligente */}
         <div className="flex items-center gap-4 cursor-pointer" onClick={irParaPainel}>
           <img 
             src={logoImg} 
-            alt="LCP Logo" 
+            alt="HELENA Logo" 
             className="w-10 h-10 object-contain rounded-md" 
           />
           <div>
-            <h1 className="text-white text-xl font-bold leading-tight">LCP</h1>
-            <p className="text-white/80 text-xs font-medium">Lung Cancer Prediction</p>
+            <h1 className="text-white text-xl font-bold leading-tight">HELENA</h1>
           </div>
         </div>
 
-        {/* Lado Direito: Perfil e Sair */}
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <span className="text-white font-medium">{perfil.nome}</span>
-            
-            {/* Botão de Perfil Inteligente */}
             <button 
               type="button"
               onClick={irParaPerfil}
@@ -102,13 +93,11 @@ export default function DashboardLayout({ children }) {
         </div>
       </header>
 
-      {/* ================= CONTEÚDO DA PÁGINA (CHILDREN) ================= */}
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
-
     </div>
   );
 }
