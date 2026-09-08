@@ -3,16 +3,17 @@ import psycopg2
 
 def obter_conexao():
     """
-    Conecta no banco 'Lung_Cancer_Prediction_DB'.
+    Estabelece conexão com o banco de dados HELENA_DB.
+    Utiliza variáveis de ambiente para flexibilidade entre ambientes de desenvolvimento e produção.
     """
     try:
         conn = psycopg2.connect(
             host=os.getenv('DB_HOST', 'localhost'),
-            database='Lung_Cancer_Prediction_DB', # <--- SEU BANCO NOVO AQUI
+            database=os.getenv('DB_NAME', 'HELENA_DB'),
             user=os.getenv('DB_USER', 'postgres'),
-            password=os.getenv('DB_PASSWORD', '123456') # <--- SUA SENHA DO POSTGRES
+            password=os.getenv('DB_PASSWORD', '123456')
         )
         return conn
     except Exception as e:
-        print(f"Erro CRÍTICO ao conectar ao banco: {e}")
+        print(f"[ERRO CRÍTICO] Falha na conexão com o banco HELENA_DB: {e}")
         return None
