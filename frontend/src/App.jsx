@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react_router_dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import LoginSelecao from './pages/LoginSelecao';
 import RecuperarSenha from './pages/RecuperarSenha';

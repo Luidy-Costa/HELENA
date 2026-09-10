@@ -10,9 +10,9 @@ export function usePerfilPaciente(pacienteId) {
   const [successMessage, setSuccessMessage] = useState('');
 
   const [formData, setFormData] = useState({
-    nome: '',
-    cpf: '',
-    dataNascimento: '',
+    nome_completo: '',
+    data_nascimento: '',
+    id_personalizado: '', // Adicionamos aqui
     telefone: '',
     alergias: '',
     comorbidades: ''
@@ -24,23 +24,24 @@ export function usePerfilPaciente(pacienteId) {
       setLoading(true);
       setError(null);
 
-      const [resPaciente, resHistorico] = await Promise.all([
-        api.get(`/pacientes/${pacienteId}`),
-        api.get(`/pacientes/${pacienteId}/historico`)
-      ]);
-
-      setPaciente(resPaciente.data);
-      setHistorico(resHistorico.data || []);
+      // Puxa tudo da nossa rota nova
+      const response = await api.get(`/pacientes/${pacienteId}/historico`);
+      const dadosPaciente = response.data.paciente;
+      
+      setPaciente(dadosPaciente);
+      setHistorico(response.data.historico || []);
+      
+      // Mapeia para o formulário
       setFormData({
-        nome: resPaciente.data.nome || '',
-        cpf: resPaciente.data.cpf || '',
-        dataNascimento: resPaciente.data.dataNascimento || '',
-        telefone: resPaciente.data.telefone || '',
-        alergias: resPaciente.data.alergias || '',
-        comorbidades: resPaciente.data.comorbidades || ''
+        nome_completo: dadosPaciente.nome_completo || '',
+        data_nascimento: dadosPaciente.data_nascimento || '',
+        id_personalizado: dadosPaciente.id_personalizado || '', // Preenche o ID
+        telefone: dadosPaciente.telefone || '',
+        alergias: dadosPaciente.alergias || '',
+        comorbidades: dadosPaciente.comorbidades || ''
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao carregar dados do paciente.');
+      setError(err.response?.data?.erro || 'Erro ao carregar dados do paciente.');
     } finally {
       setLoading(false);
     }
@@ -62,11 +63,17 @@ export function usePerfilPaciente(pacienteId) {
       setError(null);
       setSuccessMessage('');
 
-      const response = await api.put(`/pacientes/${pacienteId}`, formData);
+      // TRUQUE: Clonamos o formData e enviamos "nome" para o Flask aceitar
+      const payload = {
+        ...formData,
+        nome: formData.nome_completo 
+      };
+
+      const response = await api.put(`/pacientes/${pacienteId}`, payload);
       setPaciente(response.data);
       setSuccessMessage('Dados do paciente atualizados com sucesso!');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao atualizar dados do paciente.');
+      setError(err.response?.data?.erro || 'Erro ao atualizar dados do paciente.');
     } finally {
       setSaving(false);
     }

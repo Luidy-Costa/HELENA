@@ -1,0 +1,63 @@
+.
+├── ai_models
+│   ├── escalonador.pkl
+│   └── modelo_pulmao.pkl
+├── app
+│   ├── controllers
+│   │   ├── admin_controller.py
+│   │   ├── auth_controller.py
+│   │   ├── dashboard_controller.py
+│   │   ├── hospital_controller.py
+│   │   ├── paciente_controller.py
+│   │   ├── predicao_controller.py
+│   │   ├── __pycache__
+│   │   │   ├── admin_controller.cpython-314.pyc
+│   │   │   ├── auth_controller.cpython-314.pyc
+│   │   │   ├── dashboard_controller.cpython-314.pyc
+│   │   │   ├── hospital_controller.cpython-314.pyc
+│   │   │   ├── paciente_controller.cpython-314.pyc
+│   │   │   ├── predicao_controller.cpython-314.pyc
+│   │   │   ├── senha_controller.cpython-314.pyc
+│   │   │   └── vinculo_controller.cpython-314.pyc
+│   │   ├── senha_controller.py
+│   │   └── vinculo_controller.py
+│   ├── __init__.py
+│   ├── models
+│   │   ├── paciente_model.py
+│   │   ├── predicao_model.py
+│   │   ├── __pycache__
+│   │   │   ├── paciente_model.cpython-314.pyc
+│   │   │   ├── predicao_model.cpython-314.pyc
+│   │   │   └── usuario_model.cpython-314.pyc
+│   │   └── usuario_model.py
+│   ├── __pycache__
+│   │   └── __init__.cpython-314.pyc
+│   ├── services
+│   │   ├── ai_service.py
+│   │   ├── auth_service.py
+│   │   ├── dashboard_service.py
+│   │   ├── email_service.py
+│   │   ├── paciente_service.py
+│   │   ├── pdf_service.py
+│   │   ├── predicao_service.py
+│   │   └── __pycache__
+│   │       ├── ai_service.cpython-314.pyc
+│   │       ├── auth_service.cpython-314.pyc
+│   │       ├── dashboard_service.cpython-314.pyc
+│   │       ├── email_service.cpython-314.pyc
+│   │       ├── paciente_service.cpython-314.pyc
+│   │       ├── pdf_service.cpython-314.pyc
+│   │       └── predicao_service.cpython-314.pyc
+│   └── utils
+│       ├── database.py
+│       └── __pycache__
+│           └── database.cpython-314.pyc
+├── criar_admin.py
+├── helena_backend_map.txt
+├── notebooks
+│   ├── dataset_completo_v2.csv
+│   └── lung_cancer_prediction.ipynb
+├── requirements.txt
+└── run.py
+
+13 directories, 48 files

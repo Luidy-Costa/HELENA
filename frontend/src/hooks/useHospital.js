@@ -8,7 +8,6 @@ export function useHospital(hospitalId) {
   const [error, setError] = useState(null);
   const [filtro, setFiltro] = useState('');
 
-  // Busca dados do hospital e leitos/pacientes
   const fetchData = useCallback(async () => {
     if (!hospitalId) return;
     try {
@@ -21,9 +20,13 @@ export function useHospital(hospitalId) {
       ]);
 
       setHospitalData(resHospital.data);
-      setPacientes(resPacientes.data);
+      
+      // Blindagem: Garante que mesmo se o backend mandar dentro de um objeto { pacientes: [] }, o React entenda
+      const dadosPacientes = resPacientes.data;
+      setPacientes(Array.isArray(dadosPacientes) ? dadosPacientes : (dadosPacientes.pacientes || []));
+
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao carregar informações da área interna.');
+      setError(err.response?.data?.erro || 'Erro ao carregar informações da área interna.');
     } finally {
       setLoading(false);
     }
@@ -33,22 +36,21 @@ export function useHospital(hospitalId) {
     fetchData();
   }, [fetchData]);
 
-  // Atualizar leito ou status de paciente
   const atualizarStatusPaciente = async (pacienteId, novoStatus) => {
     try {
       await api.patch(`/pacientes/${pacienteId}`, { status: novoStatus });
-      await fetchData(); // Recarrega para manter os dados sincronizados
+      await fetchData(); 
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || 'Erro ao atualizar status.' };
+      return { success: false, error: err.response?.data?.erro || 'Erro ao atualizar status.' };
     }
   };
 
-  // Filtragem local de pacientes por nome/CPF
-  const pacientesFiltrados = pacientes.filter(p => 
-    p.nome?.toLowerCase().includes(filtro.toLowerCase()) ||
-    p.cpf?.includes(filtro)
-  );
+  // Filtro ajustado para pegar qualquer variação de nome
+  const pacientesFiltrados = pacientes.filter(p => {
+    const nome = p.nome_completo || p.nome || '';
+    return nome.toLowerCase().includes(filtro.toLowerCase()) || p.cpf?.includes(filtro);
+  });
 
   return {
     hospitalData,

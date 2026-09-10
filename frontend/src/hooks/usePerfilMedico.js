@@ -8,9 +8,8 @@ export function usePerfilMedico(medicoId) {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Form local para edição
   const [formData, setFormData] = useState({
-    nome: '',
+    nome_completo: '',
     crm: '',
     especialidade: '',
     email: '',
@@ -18,21 +17,23 @@ export function usePerfilMedico(medicoId) {
   });
 
   const fetchMedico = useCallback(async () => {
-    if (!medicoId) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/medicos/${medicoId}`);
+      
+      const rota = medicoId ? `/medicos/${medicoId}` : '/perfil';
+      const response = await api.get(rota);
+      
       setMedico(response.data);
       setFormData({
-        nome: response.data.nome || '',
+        nome_completo: response.data.nome_completo || response.data.nome || '',
         crm: response.data.crm || '',
         especialidade: response.data.especialidade || '',
         email: response.data.email || '',
         telefone: response.data.telefone || ''
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao carregar perfil do médico.');
+      setError(err.response?.data?.erro || err.response?.data?.message || 'Erro ao carregar perfil do médico.');
     } finally {
       setLoading(false);
     }
@@ -54,12 +55,20 @@ export function usePerfilMedico(medicoId) {
       setError(null);
       setSuccessMessage('');
 
-      const response = await api.put(`/medicos/${medicoId}`, formData);
+      // TRUQUE: Enviamos tanto nome_completo quanto nome para o backend não reclamar
+      const payload = {
+        ...formData,
+        nome: formData.nome_completo
+      };
+
+      const rota = medicoId ? `/medicos/${medicoId}` : '/perfil';
+      const response = await api.put(rota, payload);
+      
       setMedico(response.data);
       setSuccessMessage('Perfil atualizado com sucesso!');
       return { success: true };
     } catch (err) {
-      const msg = err.response?.data?.message || 'Erro ao atualizar dados.';
+      const msg = err.response?.data?.erro || err.response?.data?.message || 'Erro ao atualizar dados.';
       setError(msg);
       return { success: false, error: msg };
     } finally {

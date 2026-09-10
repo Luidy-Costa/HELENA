@@ -15,12 +15,13 @@ export function useConvidarMedico() {
       setError(null);
       setSuccessMessage('');
 
-      await api.post('/hospitais/convidar-medico', { email, crm });
+      await api.post('/vinculos/convidar', { email, crm });
       setSuccessMessage(`Convite enviado com sucesso para ${email}!`);
       setEmail('');
       setCrm('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao enviar convite ao médico.');
+      // Lendo a chave "erro" padronizada do Python
+      setError(err.response?.data?.erro || 'Erro ao enviar convite ao médico.');
     } finally {
       setLoading(false);
     }

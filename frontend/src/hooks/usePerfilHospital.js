@@ -9,29 +9,33 @@ export function usePerfilHospital(hospitalId) {
   const [successMessage, setSuccessMessage] = useState('');
 
   const [formData, setFormData] = useState({
-    nome: '',
+    nome_fantasia: '',
     cnpj: '',
     endereco: '',
     telefone: '',
+    email: '',
     leitosTotais: 0
   });
 
   const fetchHospital = useCallback(async () => {
-    if (!hospitalId) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/hospitais/${hospitalId}`);
+      
+      const rota = hospitalId ? `/hospitais/${hospitalId}` : '/perfil';
+      const response = await api.get(rota);
+      
       setHospital(response.data);
       setFormData({
-        nome: response.data.nome || '',
+        nome_fantasia: response.data.nome_fantasia || response.data.nome || '',
         cnpj: response.data.cnpj || '',
         endereco: response.data.endereco || '',
         telefone: response.data.telefone || '',
+        email: response.data.email || '',
         leitosTotais: response.data.leitosTotais || 0
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao carregar dados do hospital.');
+      setError(err.response?.data?.erro || err.response?.data?.message || 'Erro ao carregar dados do hospital.');
     } finally {
       setLoading(false);
     }
@@ -53,11 +57,19 @@ export function usePerfilHospital(hospitalId) {
       setError(null);
       setSuccessMessage('');
 
-      const response = await api.put(`/hospitais/${hospitalId}`, formData);
+      // TRUQUE: Enviamos as duas chaves para o backend não reclamar
+      const payload = {
+        ...formData,
+        nome: formData.nome_fantasia 
+      };
+
+      const rota = hospitalId ? `/hospitais/${hospitalId}` : '/perfil';
+      const response = await api.put(rota, payload);
+      
       setHospital(response.data);
       setSuccessMessage('Dados institucionais atualizados com sucesso!');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao atualizar dados do hospital.');
+      setError(err.response?.data?.erro || err.response?.data?.message || 'Erro ao atualizar dados do hospital.');
     } finally {
       setSaving(false);
     }

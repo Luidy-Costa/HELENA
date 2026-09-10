@@ -9,7 +9,6 @@ export default function PainelHospital() {
   const [abaAtiva, setAbaAtiva] = useState('medicos');
   const [termoBusca, setTermoBusca] = useState('');
   
-  // Estados para guardar os dados reais do banco
   const [medicos, setMedicos] = useState([]);
   const [stats, setStats] = useState({
     medicos_ativos: 0,
@@ -18,47 +17,32 @@ export default function PainelHospital() {
     alto_risco: 0
   });
 
-  // Busca os dados assim que o Painel abre
   useEffect(() => {
     const carregarDadosPainel = async () => {
-      let qtdMedicosAtivos = 0;
-
-      // 1. ARRUMANDO A TABELA DE MÉDICOS
       try {
-        const resMedicos = await api.get('/hospital/medicos');
+        // Busca tabela e estatísticas simultaneamente (mais rápido)
+        const [resMedicos, resStats] = await Promise.all([
+          api.get('/hospital/medicos'),
+          api.get('/hospital/dashboard')
+        ]);
         
-        // Padroniza a lista de médicos recebida do banco
-        const medicosPadronizados = resMedicos.data.map(m => ({
-          ...m,
-          nome_completo: m.nome_completo || m.nome,
-          ativo: m.ativo !== undefined ? m.ativo : (m.status?.toLowerCase() === 'ativo')
-        }));
+        // Atribuição direta e limpa!
+        setMedicos(resMedicos.data);
+        setStats(resStats.data);
         
-        setMedicos(medicosPadronizados);
-        qtdMedicosAtivos = medicosPadronizados.filter(m => m.ativo === true).length;
       } catch (error) {
-        console.error("Erro ao carregar a tabela de médicos:", error);
-      }
-
-      // 2. ARRUMANDO OS NÚMEROS ZERADOS DOS CARDS
-      try {
-        const resStats = await api.get('/hospital/dashboard');
-        
-        setStats({
-          medicos_ativos: resStats.data.medicos_ativos || resStats.data.medicos || qtdMedicosAtivos,
-          total_pacientes: resStats.data.total_pacientes || resStats.data.pacientes || resStats.data.pacientes_atendidos || 0,
-          avaliacoes_mes: resStats.data.avaliacoes_mes || resStats.data.avaliacoes || resStats.data.total_predicoes || 0,
-          alto_risco: resStats.data.alto_risco || resStats.data.risco || resStats.data.casos_graves || 0
-        });
-      } catch (error) {
-        console.error("Erro ao carregar estatísticas do hospital:", error);
+        console.error("Erro ao carregar dados do hospital:", error);
+        // Se o Token expirou ou o Hospital sofreu Soft Delete:
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem('@HELENA:token');
+          navigate('/login-hospital');
+        }
       }
     };
 
     carregarDadosPainel();
-  }, []);
+  }, [navigate]);
 
-  // Filtro de busca na tabela
   const medicosFiltrados = medicos.filter(m => 
     m.nome_completo?.toLowerCase().includes(termoBusca.toLowerCase()) ||
     m.crm?.toLowerCase().includes(termoBusca.toLowerCase())
@@ -66,14 +50,11 @@ export default function PainelHospital() {
 
   return (
     <DashboardLayout>
-      
-      {/* Título da Página (Padrão Médico) */}
       <div className="mb-8 mt-4">
         <h2 className="text-3xl font-bold text-[#0b2b3f] mb-1">Painel Administrativo Hospitalar</h2>
-        <p className="text-[#6eb1be] text-lg font-medium">Visão geral do sistema Lung Cancer Prediction</p>
+        <p className="text-[#6eb1be] text-lg font-medium">Visão geral do sistema HELENA</p>
       </div>
 
-      {/* Grid de Cards Estatísticos (Padrão Médico: rounded-xl e ícones rounded-lg) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]"><Users size={32} /></div>
@@ -94,7 +75,7 @@ export default function PainelHospital() {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
           <div className="bg-[#f4f9fb] p-4 rounded-lg text-[#0b2b3f]"><Clock size={32} /></div>
           <div>
-            <p className="text-[#6eb1be] font-bold text-sm">Avaliações Este Mês</p>
+            <p className="text-[#6eb1be] font-bold text-sm">Avaliações do Mês</p>
             <h3 className="text-3xl font-bold text-[#0b2b3f]">{stats.avaliacoes_mes}</h3>
           </div>
         </div>
@@ -108,17 +89,13 @@ export default function PainelHospital() {
         </div>
       </div>
 
-      {/* Seção da Tabela (Padrão Médico) */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        
-        {/* Cabeçalho da Tabela e Controles */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-6">
           <div>
             <h3 className="text-2xl font-bold text-[#0b2b3f]">Médicos Vinculados</h3>
             <p className="text-gray-500 font-medium text-sm">Gerencie os profissionais de saúde do seu hospital</p>
           </div>
 
-          {/* Controles do Hospital (Abas e Adicionar) perfeitamente alinhados */}
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
             <div className="flex bg-[#f4f9fb] rounded-lg p-1 border border-gray-100">
               <button 
@@ -131,7 +108,7 @@ export default function PainelHospital() {
               </button>
               <button 
                 onClick={() => navigate('/historico-pacientes-hospital')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-md font-bold text-sm transition-all text-[#6eb1be] hover:bg-white/50`}
+                className="flex items-center gap-2 px-6 py-2 rounded-md font-bold text-sm transition-all text-[#6eb1be] hover:bg-white/50"
               >
                 <Activity size={16} /> Pacientes
               </button>
@@ -146,7 +123,6 @@ export default function PainelHospital() {
           </div>
         </div>
 
-        {/* Barra de Pesquisa */}
         <div className="relative mb-6">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
@@ -160,7 +136,6 @@ export default function PainelHospital() {
           />
         </div>
 
-        {/* Tabela de Médicos */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>

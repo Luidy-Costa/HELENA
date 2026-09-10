@@ -1,39 +1,51 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Save } from 'lucide-react';
-import DashboardLayout from '../../layouts/DashboardLayout'; // Ajuste o caminho se necessário
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Edit, Save, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import { usePerfilPaciente } from '../../hooks/usePerfilPaciente';
 
 export default function PerfilPacienteHospital() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pacienteId = location.state?.id;
 
-  // Estados de Controle
   const [isEditing, setIsEditing] = useState(false);
 
-  // Estado do Paciente (Dados Simulados para visualização)
-  const [paciente, setPaciente] = useState({
-    id: 'PRN-2026-001',
-    nome: 'Luisa da Silva',
-    dataNascimento: '1970-09-28' // Formato YYYY-MM-DD pro input date
-  });
+  // Redireciona se acessar a URL direto sem clicar em um paciente
+  useEffect(() => {
+    if (!pacienteId) navigate('/historico-pacientes-hospital');
+  }, [pacienteId, navigate]);
 
-  // Histórico de predições simulado igual ao print
-  const historico = [
-    { id: 1, medico: 'Dr. João Silva', data: '2026-01-03', hospital: 'Hospital São Lucas', porcentagem: '70%', risco: 'Alto risco' },
-    { id: 2, medico: 'Dr. João Silva', data: '2026-01-03', hospital: 'Hospital São Lucas', porcentagem: '60%', risco: 'Alto risco' }
-  ];
+  const {
+    historico,
+    formData,
+    loading,
+    saving,
+    error,
+    successMessage,
+    handleChange,
+    atualizarPaciente
+  } = usePerfilPaciente(pacienteId);
 
-  // Função de Edição / Salvar Simulada
-  const handleEditToggle = () => {
+  const handleEditToggle = async (e) => {
     if (isEditing) {
-      alert("Informações do paciente atualizadas com sucesso! (Simulação)");
+      await atualizarPaciente(e);
     }
     setIsEditing(!isEditing);
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-[60vh] items-center justify-center">
+          <RefreshCw className="h-10 w-10 animate-spin text-[#6eb1be]" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      
-      {/* Botão de Voltar */}
       <button 
         onClick={() => navigate('/historico-pacientes-hospital')}
         className="flex items-center gap-2 text-[#6eb1be] hover:text-[#0b2b3f] transition-colors font-bold text-sm mb-6"
@@ -41,24 +53,37 @@ export default function PerfilPacienteHospital() {
         <ArrowLeft size={16} /> Voltar para predições
       </button>
 
-      {/* Título da Página */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-[#0b2b3f] mb-1">Perfil do Usuário</h2>
         <p className="text-[#6eb1be] text-lg font-medium">Visualize as informações do paciente</p>
       </div>
 
+      {error && (
+        <div className="p-4 mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2 font-medium">
+          <AlertCircle className="h-5 w-5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-4 mb-6 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-center gap-2 font-medium">
+          <CheckCircle2 className="h-5 w-5" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
       {/* =============== CAIXA 1: DADOS PESSOAIS =============== */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
         <h3 className="text-xl font-bold text-[#0b2b3f] mb-6 border-b border-gray-100 pb-2">Dados Pessoais</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Nome */}
+        <form className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label className="block text-[#0b2b3f] font-bold text-sm mb-1">Nome completo</label>
             <input 
               type="text" 
-              value={paciente.nome}
-              onChange={(e) => setPaciente({...paciente, nome: e.target.value})}
+              name="nome_completo"
+              value={formData.nome_completo || ''}
+              onChange={handleChange}
               readOnly={!isEditing}
               className={`w-full px-4 py-3 border rounded-lg outline-none transition-all ${
                 isEditing 
@@ -68,13 +93,13 @@ export default function PerfilPacienteHospital() {
             />
           </div>
           
-          {/* Data Nasc (Vira calendário se estiver editando) */}
           <div>
             <label className="block text-[#0b2b3f] font-bold text-sm mb-1">Data de nascimento</label>
             <input 
               type={isEditing ? "date" : "text"} 
-              value={isEditing ? paciente.dataNascimento : new Date(paciente.dataNascimento + "T00:00:00").toLocaleDateString('pt-BR')}
-              onChange={(e) => setPaciente({...paciente, dataNascimento: e.target.value})}
+              name="data_nascimento"
+              value={isEditing ? formData.data_nascimento : (formData.data_nascimento ? new Date(formData.data_nascimento + "T00:00:00").toLocaleDateString('pt-BR') : '')}
+              onChange={handleChange}
               readOnly={!isEditing}
               className={`w-full px-4 py-3 border rounded-lg outline-none transition-all ${
                 isEditing 
@@ -84,29 +109,28 @@ export default function PerfilPacienteHospital() {
             />
           </div>
 
-          {/* ID (Sempre bloqueado, pois ID não muda) */}
           <div className="md:col-span-2 md:w-1/2 md:pr-3">
             <label className="block text-[#0b2b3f] font-bold text-sm mb-1">Id do paciente</label>
             <input 
               type="text" 
-              value={paciente.id}
+              value={formData.id_personalizado || ''}
               readOnly
               className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50/50 text-gray-600 outline-none cursor-not-allowed font-bold" 
             />
           </div>
-        </div>
+        </form>
 
-        {/* Botão Dinâmico (Editar / Salvar) */}
         <button 
           onClick={handleEditToggle}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all shadow-md ${
+          disabled={saving}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all shadow-md disabled:opacity-50 ${
             isEditing 
               ? 'bg-green-500 hover:bg-green-600 text-white' 
               : 'bg-[#6eb1be] hover:bg-[#5ca0ad] text-white'
           }`}
         >
-          {isEditing ? <Save size={18} /> : <Edit size={18} />}
-          {isEditing ? 'Salvar Informações' : 'Editar Informações'}
+          {saving ? <RefreshCw size={18} className="animate-spin" /> : (isEditing ? <Save size={18} /> : <Edit size={18} />)}
+          {saving ? 'Salvando...' : (isEditing ? 'Salvar Informações' : 'Editar Informações')}
         </button>
       </div>
 
@@ -127,30 +151,37 @@ export default function PerfilPacienteHospital() {
               </tr>
             </thead>
             <tbody>
-              {historico.map((item) => (
-                <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="py-5 text-gray-600 font-medium">{item.medico}</td>
-                  <td className="py-5 text-gray-600 font-medium">{new Date(item.data).toLocaleDateString('pt-BR')}</td>
-                  <td className="py-5 text-gray-600 font-medium">{item.hospital}</td>
-                  <td className="py-5 text-gray-600 font-bold">{item.porcentagem}</td>
-                  <td className="py-5 text-gray-600 font-medium lowercase">
-                    {item.risco}
-                  </td>
-                  <td className="py-5 text-right">
-                    <button 
-                      onClick={() => navigate('/previsao-hospital')} 
-                      className="px-6 py-2 border-2 border-[#6eb1be] text-[#6eb1be] font-bold text-sm rounded-full hover:bg-[#6eb1be] hover:text-white transition-colors"
-                    >
-                      Saiba mais
-                    </button>
+              {historico.length > 0 ? (
+                historico.map((item) => (
+                  <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="py-5 text-gray-600 font-medium">{item.medico}</td>
+                    <td className="py-5 text-gray-600 font-medium">{item.data_predicao}</td>
+                    <td className="py-5 text-gray-600 font-medium">{item.hospital}</td>
+                    <td className="py-5 text-gray-600 font-bold">{item.probabilidade_risco}%</td>
+                    <td className="py-5 text-gray-600 font-medium lowercase">
+                      {item.diagnostico_final}
+                    </td>
+                    <td className="py-5 text-right">
+                      <button 
+                        onClick={() => navigate('/previsao-hospital', { state: { id: item.id, pacienteId: pacienteId } })} 
+                        className="px-6 py-2 border-2 border-[#6eb1be] text-[#6eb1be] font-bold text-sm rounded-full hover:bg-[#6eb1be] hover:text-white transition-colors"
+                      >
+                        Saiba mais
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-gray-400 font-medium">
+                    Nenhum laudo encontrado para este paciente.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </div>
-
     </DashboardLayout>
   );
 }

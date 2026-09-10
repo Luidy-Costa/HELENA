@@ -36,8 +36,23 @@ export default function DashboardLayout({ children }) {
     navigate('/'); 
   };
 
+  // Nova regra inteligente para identificar o módulo
+  const verificarSeEhHospital = () => {
+    const path = location.pathname;
+    
+    // Se for a visão interna do médico sobre o hospital, NÃO é o painel de admin
+    if (path.includes('hospital-interna')) return false;
+    
+    // Se a rota tem hospital (e não for a interna) ou for convidar-medico, é admin hospitalar
+    if (path.includes('hospital') || path.includes('convidar-medico')) {
+      return true;
+    }
+    
+    return false;
+  };
+
   const irParaPainel = () => {
-    if (location.pathname.includes('hospital')) {
+    if (verificarSeEhHospital()) {
       navigate('/painel-hospital');
     } else {
       navigate('/painel-medico');
@@ -45,7 +60,7 @@ export default function DashboardLayout({ children }) {
   };
 
   const irParaPerfil = () => {
-    if (location.pathname.includes('hospital')) {
+    if (verificarSeEhHospital()) {
       navigate('/perfil-hospital');
     } else {
       navigate('/perfil-medico');

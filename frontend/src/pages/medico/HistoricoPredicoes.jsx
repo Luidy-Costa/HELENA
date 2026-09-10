@@ -39,10 +39,10 @@ export default function HistoricoPredicoes() {
     }
   };
 
-  const pacientesFiltrados = pacientes.filter(p => 
-    p.nome?.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    p.id?.toString().includes(termoBusca)
-  );
+  const pacientesFiltrados = pacientes.filter(p => {
+    const nomeBusca = p.nome_completo || p.nome || '';
+    return nomeBusca.toLowerCase().includes(termoBusca.toLowerCase()) || p.id?.toString().includes(termoBusca);
+  });
 
   return (
     <DashboardLayout>
@@ -75,33 +75,34 @@ export default function HistoricoPredicoes() {
 
       <div className="space-y-4">
         {pacientesFiltrados.length > 0 ? (
-          pacientesFiltrados.map((paciente, index) => (
-            <div key={index} className="flex flex-col md:flex-row items-center justify-between p-6 border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
+          pacientesFiltrados.map((paciente) => (
+            <div key={paciente.id} className="flex flex-col md:flex-row items-center justify-between p-6 border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
               <div className="flex items-center gap-5 w-full md:w-auto mb-4 md:mb-0">
                 <div className="bg-[#f4f9fb] p-3 rounded-full text-[#0b2b3f] flex-shrink-0">
                   <Activity size={24} />
                 </div>
                 
                 <div>
-                  <h4 className="text-[#0b2b3f] text-lg font-bold mb-1">{paciente.nome}</h4>
+                  <h4 className="text-[#0b2b3f] text-lg font-bold mb-1">{paciente.nome_completo || paciente.nome}</h4>
                   <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 font-medium">
                     <span className="flex items-center gap-1.5"><FileText size={16} /> ID: {paciente.id}</span>
                     <span className="flex items-center gap-1.5">
                       <Calendar size={16} /> 
-                      Nascimento: {paciente.dataNascimento ? new Date(paciente.dataNascimento).toLocaleDateString('pt-BR') : '--'}
+                      Nascimento: {paciente.data_nascimento || paciente.dataNascimento ? new Date(paciente.data_nascimento || paciente.dataNascimento).toLocaleDateString('pt-BR') : '--'}
                     </span>
-                    {paciente.ultimaAtualizacao && (
+                    {(paciente.ultima_atualizacao || paciente.ultimaAtualizacao) && (
                       <span className="flex items-center gap-1.5">
                         <Calendar size={16} /> 
-                        Atualizado em: {new Date(paciente.ultimaAtualizacao).toLocaleDateString('pt-BR')}
+                        Atualizado em: {new Date(paciente.ultima_atualizacao || paciente.ultimaAtualizacao).toLocaleDateString('pt-BR')}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
 
+              {/* BOTÃO CORRIGIDO: Agora enviando o ID direto pela URL */}
               <button 
-                onClick={() => navigate('/perfil-paciente', { state: { paciente } })} 
+                onClick={() => navigate(`/perfil-paciente/${paciente.id}`)} 
                 className="w-full md:w-auto px-6 py-2 border-2 border-[#0b2b3f] text-[#0b2b3f] font-bold rounded-lg hover:bg-[#0b2b3f] hover:text-white transition-colors flex-shrink-0"
               >
                 Ver Perfil Completo

@@ -10,7 +10,8 @@ export default function LoginSelecao() {
   const handleEntrar = () => {
     if (tipoSelecionado === "medico") navigate("/login-medico"); 
     else if (tipoSelecionado === "hospital") navigate("/login-hospital"); 
-    else if (tipoSelecionado === "admin") console.log("Navegar para admin geral"); 
+    // CORREÇÃO: Agora navega para a tela de login do admin!
+    else if (tipoSelecionado === "admin") navigate("/login-admin"); 
   };
 
   return (

@@ -1,175 +1,209 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react';
-import { useResultadoPredicao } from '../hooks/useResultadoPredicao';
-import { 
-  BrainCircuit, 
-  AlertTriangle, 
-  CheckCircle, 
-  FileText, 
-  Save, 
-  ArrowLeft, 
-  RefreshCw, 
-  AlertCircle,
-  Activity
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { RefreshCw, AlertCircle, FileText, ArrowLeft } from 'lucide-react';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../services/api';
 
 export default function ResultadoPredicao() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    predicao,
-    observacaoMedica,
-    setObservacaoMedica,
-    loading,
-    saving,
-    error,
-    successMessage,
-    salvarParecer,
-    refetch
-  } = useResultadoPredicao(id);
+  
+  const [dados, setDados] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const buscarResultado = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/predicoes/${id}`);
+        setDados(response.data);
+      } catch (err) {
+        setError(err.response?.data?.erro || "Erro ao buscar a predição no banco.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (id) buscarResultado();
+  }, [id]);
+
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await api.get(`/predicoes/${id}/pdf`, {
+        responseType: 'blob', 
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `predicao_${dados?.paciente_nome?.replace(/\s/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      alert("Erro ao tentar baixar o laudo PDF.");
+    }
+  };
+
+  const mapeamentoPerguntas = {
+    Idade: "Qual a faixa etária do paciente?",
+    Genero: "Qual o gênero do paciente?",
+    Fumo: "Qual o histórico de tabagismo?",
+    Alcoolismo: "Possui histórico de alcoolismo?",
+    Freq_Respiratoria: "Frequência Respiratória:",
+    Freq_Cardiaca: "Frequência Cardíaca:",
+    Pressao_Sistolica: "Pressão Sistólica:",
+    Pressao_Diastolica: "Pressão Diastólica:",
+    Sat_Oxigenio: "Saturação de Oxigênio (SpO2):",
+    IMC: "Índice de Massa Corporal (IMC):",
+    Falta_Ar: "O paciente apresenta Falta de Ar?",
+    Tosse: "O paciente apresenta Tosse persistente?",
+    Tosse_Sangue: "O paciente apresenta Tosse com Sangue (Hemoptise)?",
+    Fadiga: "O paciente relata Fadiga (cansaço extremo)?",
+    Chiado: "O paciente apresenta Chiado no peito?"
+  };
+
+  const formatarResposta = (valor) => {
+    if (!valor && valor !== 0) return '-';
+    let formatado = valor.toString().toLowerCase().replace(/_/g, ' ');
+    if (formatado === 'm') return 'masculino';
+    if (formatado === 'f') return 'feminino';
+    return formatado;
+  };
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-600">Processando resultados do modelo...</span>
-      </div>
+      <DashboardLayout>
+        <div className="flex h-[60vh] items-center justify-center">
+          <RefreshCw className="h-10 w-10 animate-spin text-[#6eb1be]" />
+          <span className="ml-3 text-[#1a3c5a] font-bold text-xl">Carregando previsão...</span>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center justify-between max-w-4xl mx-auto my-6">
-        <div className="flex items-center gap-2">
+      <DashboardLayout>
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2 max-w-4xl font-medium">
           <AlertCircle className="h-5 w-5" />
           <span>{error}</span>
         </div>
-        <button onClick={refetch} className="text-sm underline font-medium">Tentar novamente</button>
-      </div>
+      </DashboardLayout>
     );
   }
 
-  const nivelRisco = predicao?.nivelRisco || 'Baixo'; // Ex: 'Alto', 'Médio', 'Baixo'
-  const probabilidade = predicao?.probabilidade || 0;
+  const isAltoRisco = dados?.resultado?.toLowerCase().includes("alto");
+  const corRisco = isAltoRisco ? "text-red-600" : "text-green-600";
 
-  // Formatação de cor dinâmica por nível de risco
-  const getBadgeStyle = (risco) => {
-    switch (risco.toLowerCase()) {
-      case 'alto':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'médio':
-      case 'medio':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      default:
-        return 'bg-green-100 text-green-800 border-green-200';
-    }
-  };
+  const idDoPaciente = dados?.paciente_id || dados?.id_personalizado || (dados?.id ? `PRN-${String(dados.id).padStart(3, '0')}` : '-');
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Botão de Voltar */}
-      <button 
-        onClick={() => navigate(-1)} 
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar
-      </button>
+    <DashboardLayout>
+      <div className="max-w-5xl mx-auto space-y-6">
+        
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-[#6eb1be] hover:text-[#0b2b3f] transition-colors font-bold text-sm"
+        >
+          <ArrowLeft size={16} /> Voltar
+        </button>
 
-      {/* Header com Resultado do Modelo */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+        {/* Cabeçalho */}
         <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-              <BrainCircuit className="h-8 w-8" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Resultado da Análise Preditiva</h1>
-              <p className="text-sm text-gray-500">Paciente: {predicao?.nomePaciente || 'Paciente Indefinido'}</p>
-            </div>
+          <div>
+            <h2 className="text-3xl font-bold text-[#1a3c5a] mb-2">Previsão</h2>
+            <p className="text-[#6eb1be] text-lg">Visualize a previsão do paciente</p>
           </div>
-          <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${getBadgeStyle(nivelRisco)}`}>
-            Risco {nivelRisco}
-          </span>
-        </div>
-
-        {/* Indicador de Probabilidade */}
-        <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-          <div className="flex justify-between text-sm font-medium">
-            <span className="text-gray-600 flex items-center gap-1.5">
-              <Activity className="h-4 w-4 text-blue-600" />
-              Probabilidade Estimada
-            </span>
-            <span className="text-gray-900 font-bold">{probabilidade}%</span>
-          </div>
-          <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
-            <div 
-              className={`h-2.5 rounded-full transition-all duration-500 ${
-                probabilidade > 70 ? 'bg-red-500' : probabilidade > 30 ? 'bg-amber-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${probabilidade}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Fatores de Risco Identificados */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-          Fatores de Maior Relevância
-        </h2>
-        <ul className="divide-y divide-gray-100 text-sm">
-          {predicao?.fatores?.length > 0 ? (
-            predicao.fatores.map((fator, index) => (
-              <li key={index} className="py-3 flex justify-between items-center">
-                <span className="text-gray-700 font-medium">{fator.nome}</span>
-                <span className="text-gray-500">{fator.impacto}</span>
-              </li>
-            ))
-          ) : (
-            <li className="py-3 text-gray-400">Nenhum fator de risco crítico detectado.</li>
-          )}
-        </ul>
-      </div>
-
-      {/* Campo para Parecer do Médico */}
-      <form onSubmit={salvarParecer} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
-          Parecer Médico e Observações
-        </h2>
-
-        {successMessage && (
-          <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-center gap-2 text-sm">
-            <CheckCircle className="h-4 w-4" />
-            <span>{successMessage}</span>
-          </div>
-        )}
-
-        <textarea
-          rows={4}
-          value={observacaoMedica}
-          onChange={(e) => setObservacaoMedica(e.target.value)}
-          placeholder="Insira as observações médicas, conduta tomada ou validação da predição..."
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-700"
-        />
-
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50 text-sm"
+          
+          <button 
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-3 bg-white border border-gray-200 shadow-sm px-5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
           >
-            {saving ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {saving ? 'Salvando...' : 'Salvar Parecer'}
+            <FileText className="text-red-500 h-5 w-5" fill="currentColor" />
+            <span className="font-medium text-gray-700">predição.pdf</span>
+            <span className="text-green-600 font-bold text-sm">2.4 MB</span>
           </button>
         </div>
-      </form>
-    </div>
+
+        {/* Card: Dados Pessoais */}
+        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-10">
+          <h3 className="text-xl font-bold text-[#1a3c5a] mb-6 border-b border-gray-100 pb-4">
+            Dados Pessoais
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-6 mb-8">
+            <div className="md:col-span-3">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Nome completo</label>
+              <input readOnly value={dados?.paciente_nome || ''} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Data de nascimento</label>
+              <input readOnly value={dados?.paciente_nasc || ''} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Id do paciente</label>
+              <input readOnly value={idDoPaciente} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Médico</label>
+              <input readOnly value={dados?.medico_nome || 'Dr. João Silva'} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Hospital</label>
+              <input readOnly value={dados?.hospital_nome || ''} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Data da previsão</label>
+              <input readOnly value={dados?.data || ''} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Probabilidade de risco</label>
+              <input readOnly value={`${dados?.probabilidade || 0}%`} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[#1a3c5a] font-medium text-sm mb-2">Diagnóstico final</label>
+              <input readOnly value={dados?.resultado || ''} className="w-full px-4 py-2 border border-gray-200 rounded-full bg-white text-gray-600 outline-none" />
+            </div>
+          </div>
+
+          <div className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm">
+            <h4 className="text-[#1a3c5a] font-bold mb-2">Observações</h4>
+            <p className="text-gray-500 text-sm">
+              {dados?.observacoes || "Paciente apresenta sinais e sintomas sugestivos, recomendando-se investigação diagnóstica complementar."}
+            </p>
+          </div>
+        </div>
+
+        {/* Card: Formulário e Respostas */}
+        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-10 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 text-center border-b border-gray-200 pb-4 mb-2">
+            <h3 className="text-xl font-bold text-[#1a3c5a]">Formulário</h3>
+            <h3 className="text-xl font-bold text-[#1a3c5a]">Resposta</h3>
+          </div>
+          
+          <div className="flex flex-col">
+            {dados?.sintomas && Object.entries(dados.sintomas).map(([chave, valor], index) => (
+              <div key={index} className="grid grid-cols-2 items-center py-4 border-b border-gray-100">
+                <span className="text-[#1a3c5a] font-medium pr-4">{mapeamentoPerguntas[chave] || chave}</span>
+                <span className="text-[#6eb1be] text-center font-medium">{formatarResposta(valor)}</span>
+              </div>
+            ))}
+            
+            {/* Linha de Resultado Final */}
+            <div className="grid grid-cols-2 items-center py-5">
+              <span className="text-xl font-bold text-[#1a3c5a]">Resultado Final</span>
+              <span className={`text-center font-bold ${corRisco}`}>
+                Com {dados?.probabilidade}% de risco, paciente apresenta {dados?.resultado?.toLowerCase()}.
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </DashboardLayout>
   );
 }

@@ -81,3 +81,91 @@ def alterar_status_medico(medico_id):
     finally:
         cursor.close()
         conn.close()
+
+# =====================================================================
+# [ROTA ATUALIZADA] Obter dados E estatísticas do hospital
+# =====================================================================
+@hospital_bp.route('/api/hospitais/<int:hospital_id>', methods=['GET'])
+@jwt_required()
+def obter_hospital(hospital_id):
+    conn = obter_conexao()
+    cursor = conn.cursor()
+    usuario_id = get_jwt_identity()
+    claims = get_jwt()
+    tipo_usuario = claims.get('tipo')
+    
+    try:
+        # 1. Busca o nome do hospital
+        cursor.execute("""
+            SELECT nome_fantasia 
+            FROM hospitais 
+            WHERE id = %s
+        """, (hospital_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({"erro": "Hospital não encontrado"}), 404
+        
+        nome_hospital = row[0]
+        
+        # 2. Conta Total de Pacientes do Hospital
+        cursor.execute("SELECT COUNT(*) FROM pacientes WHERE hospital_id = %s", (hospital_id,))
+        total_pacientes = cursor.fetchone()[0]
+        
+        # 3. Conta Avaliações do Mês e Alto Risco (Dinâmico por tipo de usuário)
+        if tipo_usuario == 'medico':
+            # Se for médico, conta só as predições DELE neste hospital
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM predicao 
+                WHERE hospital_id = %s AND medico_id = %s
+                AND EXTRACT(MONTH FROM data_predicao) = EXTRACT(MONTH FROM CURRENT_DATE)
+                AND EXTRACT(YEAR FROM data_predicao) = EXTRACT(YEAR FROM CURRENT_DATE)
+            """, (hospital_id, usuario_id))
+            avaliacoes_mes = cursor.fetchone()[0]
+            
+            # ATENÇÃO: %%alto%% para escapar o caractere no psycopg2
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM predicao 
+                WHERE hospital_id = %s AND medico_id = %s
+                AND LOWER(diagnostico_final) LIKE '%%alto%%'
+            """, (hospital_id, usuario_id))
+            alto_risco = cursor.fetchone()[0]
+            
+        else:
+            # Se for hospital, conta TODAS as predições da unidade
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM predicao 
+                WHERE hospital_id = %s 
+                AND EXTRACT(MONTH FROM data_predicao) = EXTRACT(MONTH FROM CURRENT_DATE)
+                AND EXTRACT(YEAR FROM data_predicao) = EXTRACT(YEAR FROM CURRENT_DATE)
+            """, (hospital_id,))
+            avaliacoes_mes = cursor.fetchone()[0]
+            
+            # ATENÇÃO: %%alto%% para escapar o caractere no psycopg2
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM predicao 
+                WHERE hospital_id = %s 
+                AND LOWER(diagnostico_final) LIKE '%%alto%%'
+            """, (hospital_id,))
+            alto_risco = cursor.fetchone()[0]
+
+        dados_hospital = {
+            "id": hospital_id,
+            "nome": nome_hospital,
+            "total_pacientes": total_pacientes,
+            "avaliacoes_mes": avaliacoes_mes,
+            "alto_risco": alto_risco
+        }
+        
+        return jsonify(dados_hospital), 200
+        
+    except Exception as e:
+        print(f"Erro SQL ao obter estatísticas do hospital: {str(e)}")
+        return jsonify({"erro": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()

@@ -51,6 +51,10 @@ def obter_predicao_json(predicao_id):
         dados_completos = model.buscar_por_id_completo(predicao_id) 
         if not dados_completos:
             return jsonify({"erro": "Predição não encontrada"}), 404
+        
+        # Garante a presença do ID do paciente no retorno ou gera o fallback PRN-xxx
+        if not dados_completos.get('paciente_id'):
+            dados_completos['paciente_id'] = dados_completos.get('id_personalizado') or f"PRN-{str(predicao_id).zfill(3)}"
             
         return jsonify(dados_completos), 200
     except Exception as e:
