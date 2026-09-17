@@ -43,7 +43,6 @@ class DashboardService:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # CORREÇÃO: Usando o nome exato da tabela 'vinculos_hospital_medico'
             query = """
                 SELECT 
                     h.id, 
@@ -77,19 +76,15 @@ class DashboardService:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # Médicos Ativos (Vínculos)
             cursor.execute("SELECT COUNT(*) FROM vinculos_hospital_medico WHERE hospital_id = %s;", (hospital_id,))
             medicos_ativos = cursor.fetchone()[0]
 
-            # Total Pacientes
             cursor.execute("SELECT COUNT(*) FROM pacientes WHERE hospital_id = %s;", (hospital_id,))
             total_pacientes = cursor.fetchone()[0]
 
-            # Avaliações do Mês (Simplificado: Total Geral por enquanto)
             cursor.execute("SELECT COUNT(*) FROM predicao WHERE hospital_id = %s;", (hospital_id,))
             total_avaliacoes = cursor.fetchone()[0]
 
-            # Alto Risco
             cursor.execute("""
                 SELECT COUNT(*) FROM predicao 
                 WHERE hospital_id = %s AND diagnostico_final = 'Alto Risco';
@@ -111,7 +106,6 @@ class DashboardService:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # Conta tudo do sistema inteiro
             cursor.execute("SELECT COUNT(*) FROM hospitais;")
             total_hospitais = cursor.fetchone()[0]
 
@@ -121,14 +115,19 @@ class DashboardService:
             cursor.execute("SELECT COUNT(*) FROM pacientes;")
             total_pacientes = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COUNT(*) FROM predicao;")
-            total_predicoes = cursor.fetchone()[0]
+            cursor.execute("""
+                SELECT COUNT(*) FROM predicao
+                WHERE EXTRACT(MONTH FROM data_predicao) = EXTRACT(MONTH FROM CURRENT_DATE)
+                AND EXTRACT(YEAR FROM data_predicao) = EXTRACT(YEAR FROM CURRENT_DATE)
+            """)
+            avaliacoes_mes = cursor.fetchone()[0]
 
+            # CORREÇÃO AQUI: Nomes exatos que o React espera
             return {
                 "total_hospitais": total_hospitais,
                 "total_medicos": total_medicos,
-                "total_pacientes_geral": total_pacientes,
-                "total_predicoes_geral": total_predicoes
+                "total_pacientes": total_pacientes,
+                "avaliacoes_mes": avaliacoes_mes
             }
         finally:
             cursor.close()
@@ -138,23 +137,18 @@ class DashboardService:
         conn = obter_conexao()
         cursor = conn.cursor()
         try:
-            # 1. Conta o total de pacientes vinculados a este hospital
             cursor.execute("SELECT COUNT(*) FROM pacientes WHERE hospital_id = %s;", (hospital_id,))
             total_pacientes = cursor.fetchone()[0]
 
-            # 2. Conta o total de avaliações feitas neste hospital
             cursor.execute("SELECT COUNT(*) FROM predicao WHERE hospital_id = %s;", (hospital_id,))
             avaliacoes_mes = cursor.fetchone()[0]
 
-            # 3. Conta quantas deram 'Alto Risco' neste hospital
             cursor.execute("SELECT COUNT(*) FROM predicao WHERE hospital_id = %s AND diagnostico_final = 'Alto Risco';", (hospital_id,))
             alto_risco = cursor.fetchone()[0]
             
-            # 4. Médicos Ativos (Opcional, pois o React já conta, mas enviamos por garantia)
             cursor.execute("SELECT COUNT(*) FROM vinculos_hospital_medico WHERE hospital_id = %s AND status = 'Ativo';", (hospital_id,))
             medicos_ativos = cursor.fetchone()[0]
 
-            # Envia o pacote JSON com os nomes EXATOS que o React do Hospital espera
             return {
                 "medicos_ativos": medicos_ativos,
                 "total_pacientes": total_pacientes,

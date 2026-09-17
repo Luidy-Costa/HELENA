@@ -79,6 +79,10 @@ def login_medico():
 @auth_bp.route('/api/login/admin', methods=['POST'])
 def login_admin():
     dados = request.json
-    resultado = service.login_admin(dados.get('email'), dados.get('senha'))
+    # BLINDAGEM: Remove espaços acidentais no início/fim e joga tudo para minúsculo
+    email = dados.get('email', '').strip().lower()
+    senha = dados.get('senha', '')
+    
+    resultado = service.login_admin(email, senha)
     status_code = resultado.pop("status", 401)
     return jsonify(resultado), status_code

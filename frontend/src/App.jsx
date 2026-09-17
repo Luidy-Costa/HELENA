@@ -3,6 +3,17 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginSelecao from './pages/LoginSelecao';
 import RecuperarSenha from './pages/RecuperarSenha';
 
+// Módulo Admin
+import LoginAdmin from './pages/admin/LoginAdmin';
+import PainelAdmin from './pages/admin/PainelAdmin'; 
+import PerfilAdmin from './pages/admin/PerfilAdmin';
+import CadastroHospitalAdmin from './pages/admin/CadastroHospitalAdmin';
+import HospitalInternaAdmin from './pages/admin/HospitalInternaAdmin';
+import ConvidarMedicoAdmin from './pages/admin/ConvidarMedicoAdmin'; 
+import PerfilMedicoAdmin from './pages/admin/PerfilMedicoAdmin';     
+import PerfilPacienteAdmin from './pages/admin/PerfilPacienteAdmin'; // <-- IMPORTAÇÃO ADICIONADA
+import PrevisaoAdmin from './pages/admin/PrevisaoAdmin';             // <-- IMPORTAÇÃO ADICIONADA
+
 // Módulo Médico
 import LoginMedico from './pages/medico/LoginMedico';
 import CadastroMedico from './pages/medico/CadastroMedico';
@@ -32,6 +43,17 @@ function App() {
         {/* Autenticação & Geral */}
         <Route path="/" element={<LoginSelecao />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+        
+        {/* Fluxo Admin */}
+        <Route path="/login-admin" element={<LoginAdmin />} />
+        <Route path="/painel-admin" element={<PainelAdmin />} /> 
+        <Route path="/admin/perfil" element={<PerfilAdmin />} />
+        <Route path="/admin/cadastro-hospital" element={<CadastroHospitalAdmin />} />
+        <Route path="/admin/hospital/:id" element={<HospitalInternaAdmin />} />
+        <Route path="/admin/convidar-medico" element={<ConvidarMedicoAdmin />} />
+        <Route path="/admin/perfil-medico" element={<PerfilMedicoAdmin />} />
+        <Route path="/admin/perfil-paciente" element={<PerfilPacienteAdmin />} /> {/* <-- ROTA ADICIONADA */}
+        <Route path="/admin/previsao" element={<PrevisaoAdmin />} />             {/* <-- ROTA ADICIONADA */}
 
         {/* Fluxo Médico */}
         <Route path="/login-medico" element={<LoginMedico />} />
